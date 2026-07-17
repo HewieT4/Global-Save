@@ -1,0 +1,6 @@
+{
+  "name": "GlobalSave",
+  "description": "Decentralized Micro-Savings & Shared Expenses on Monad featuring multi-sig vaults, 24h dispute locks, and real-time DeFi yield generation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
