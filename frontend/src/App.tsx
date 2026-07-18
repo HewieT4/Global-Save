@@ -79,6 +79,14 @@ export default function App() {
   const [showPrivateKey, setShowPrivateKey] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
+  const [mockNotification, setMockNotification] = useState<string | null>(null);
+  const triggerNotification = (msg: string) => {
+    setMockNotification(msg);
+    setTimeout(() => {
+      setMockNotification(null);
+    }, 4000);
+  };
+
   const handleSignOut = () => {
     setCurrentUserAddress("");
   };
@@ -1705,6 +1713,13 @@ export default function App() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {mockNotification && (
+        <div className="fixed bottom-6 right-6 bg-zinc-900/95 border border-[#007AFF]/30 px-4 py-3 rounded-xl flex items-center space-x-2 text-xs font-mono text-[#007AFF] shadow-xl shadow-blue-500/5 z-50">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF] animate-ping" />
+          <span>{mockNotification}</span>
         </div>
       )}
     </div>

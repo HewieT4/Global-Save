@@ -14,35 +14,35 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
     abi: GLOBAL_SAVE_ABI,
     functionName: 'groupName',
     query: { enabled: !!vaultAddress && isConnected }
-  });
+  } as any);
 
   const { data: totalPoolBalance } = useReadContract({
     address: vaultAddress,
     abi: GLOBAL_SAVE_ABI,
     functionName: 'totalPoolBalance',
     query: { enabled: !!vaultAddress && isConnected }
-  });
+  } as any);
 
   const { data: requiredSignaturesCount } = useReadContract({
     address: vaultAddress,
     abi: GLOBAL_SAVE_ABI,
     functionName: 'requiredSignaturesCount',
     query: { enabled: !!vaultAddress && isConnected }
-  });
+  } as any);
 
   const { data: yieldEnabled } = useReadContract({
     address: vaultAddress,
     abi: GLOBAL_SAVE_ABI,
     functionName: 'yieldEnabled',
     query: { enabled: !!vaultAddress && isConnected }
-  });
+  } as any);
 
   const { data: proposalCount } = useReadContract({
     address: vaultAddress,
     abi: GLOBAL_SAVE_ABI,
     functionName: 'proposalCount',
     query: { enabled: !!vaultAddress && isConnected }
-  });
+  } as any);
 
   // Write actions
   const contribute = async (amount: string) => {
@@ -53,7 +53,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       functionName: 'contribute',
       args: [parseEther(amount)],
       value: parseEther(amount)
-    });
+    } as any);
   };
 
   const createProposal = async (title: string, description: string, amount: string, recipient: string) => {
@@ -63,7 +63,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       abi: GLOBAL_SAVE_ABI,
       functionName: 'createProposal',
       args: [title, description, parseEther(amount), recipient as `0x${string}`]
-    });
+    } as any);
   };
 
   const signProposal = async (proposalId: number) => {
@@ -73,7 +73,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       abi: GLOBAL_SAVE_ABI,
       functionName: 'signProposal',
       args: [BigInt(proposalId)]
-    });
+    } as any);
   };
 
   const vetoPayout = async (proposalId: number, reason: string) => {
@@ -83,7 +83,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       abi: GLOBAL_SAVE_ABI,
       functionName: 'vetoPayout',
       args: [BigInt(proposalId), reason]
-    });
+    } as any);
   };
 
   const flagProposal = async (proposalId: number, reason: string) => {
@@ -93,7 +93,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       abi: GLOBAL_SAVE_ABI,
       functionName: 'flagProposal',
       args: [BigInt(proposalId), reason]
-    });
+    } as any);
   };
 
   const voteDispute = async (proposalId: number, support: boolean) => {
@@ -103,7 +103,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       abi: GLOBAL_SAVE_ABI,
       functionName: 'voteDispute',
       args: [BigInt(proposalId), support]
-    });
+    } as any);
   };
 
   const resolveDispute = async (proposalId: number) => {
@@ -113,7 +113,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       abi: GLOBAL_SAVE_ABI,
       functionName: 'resolveDispute',
       args: [BigInt(proposalId)]
-    });
+    } as any);
   };
 
   const executeProposal = async (proposalId: number) => {
@@ -123,7 +123,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       abi: GLOBAL_SAVE_ABI,
       functionName: 'executeProposal',
       args: [BigInt(proposalId)]
-    });
+    } as any);
   };
 
   const toggleYield = async (enabled: boolean) => {
@@ -133,7 +133,7 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
       abi: GLOBAL_SAVE_ABI,
       functionName: 'toggleYield',
       args: [enabled]
-    });
+    } as any);
   };
 
   return {
