@@ -13,6 +13,7 @@ import GroupDetails from './components/GroupDetails';
 import DisputeCenter from './components/DisputeCenter';
 import ContractViewer from './components/ContractViewer';
 import TransactionHistory from './components/TransactionHistory';
+import LandingPage from './components/LandingPage';
 
 const DEFAULT_USER_ADDRESS = '0xUSER_VIRTUAL_WALLET';
 
@@ -28,10 +29,19 @@ const DEFAULT_WALLET: WalletState = {
 };
 
 export default function App() {
+  const [showDashboard, setShowDashboard] = useState<boolean>(() => {
+    const saved = localStorage.getItem('glob_save_show_dashboard');
+    return saved === 'true';
+  });
+
   const [currentUserAddress, setCurrentUserAddress] = useState<string>(() => {
     const saved = localStorage.getItem('glob_save_current_user_address');
     return saved || DEFAULT_USER_ADDRESS;
   });
+
+  useEffect(() => {
+    localStorage.setItem('glob_save_show_dashboard', String(showDashboard));
+  }, [showDashboard]);
 
   // State variables with localStorage persistence
   const [wallet, setWallet] = useState<WalletState>(() => {
@@ -455,6 +465,10 @@ export default function App() {
     }
   };
 
+  if (!showDashboard) {
+    return <LandingPage onLaunchApp={() => setShowDashboard(true)} />;
+  }
+
   if (!currentUserAddress) {
     return (
       <div className="min-h-screen bg-dark-950 text-slate-300 flex flex-col font-sans select-none antialiased selection:bg-gold-600 selection:text-black">
@@ -625,13 +639,17 @@ export default function App() {
       <header className="bg-dark-900 border-b border-white/5 py-4 px-6 sticky top-0 z-30 shadow-md backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-gold-600 to-gold-700 rounded-xl shadow-lg shadow-gold-600/10 text-black flex items-center justify-center border border-gold-600/30">
+          <div 
+            onClick={() => setShowDashboard(false)} 
+            className="flex items-center gap-3 cursor-pointer group"
+            title="Go to website landing page"
+          >
+            <div className="p-2.5 bg-gradient-to-br from-gold-600 to-gold-700 rounded-xl shadow-lg shadow-gold-600/10 text-black flex items-center justify-center border border-gold-600/30 group-hover:scale-105 transition-transform">
               <Landmark className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-white font-display">GlobalSave</h1>
+                <h1 className="text-xl font-bold tracking-tight text-white font-display group-hover:text-gold-500 transition-colors">GlobalSave</h1>
                 <span className="px-2 py-0.5 bg-gold-600/10 border border-gold-600/20 rounded text-[9px] font-mono text-gold-500 font-medium">
                   Monad Devnet
                 </span>
@@ -653,6 +671,13 @@ export default function App() {
                 {currentUserAddress === '0xUSER_VIRTUAL_WALLET' ? 'You' : 'CO'}
               </div>
             </div>
+
+            <button
+              onClick={() => setShowDashboard(false)}
+              className="px-3.5 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-sans font-semibold transition-all shadow-md cursor-pointer active:translate-y-px"
+            >
+              Back to Website
+            </button>
 
             <button
               id="btn-sign-out"
