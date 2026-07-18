@@ -162,7 +162,7 @@ export default function GroupDetails({
     });
 
     // Colors & Styles
-    const primaryColor = [234, 179, 8]; // Gold (#EAB308)
+    const primaryColor = [61, 129, 227]; // Blue (#3D81E3)
     
     // Page Title
     doc.setFont('helvetica', 'bold');
@@ -401,7 +401,7 @@ export default function GroupDetails({
   })();
 
   const LINE_COLORS = [
-    '#EAB308', // Gold (Yellow 500)
+    '#3D81E3', // Blue (Brand 500)
     '#38BDF8', // Sky 400
     '#F43F5E', // Rose 500
     '#34D399', // Emerald 400

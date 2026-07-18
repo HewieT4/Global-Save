@@ -6,7 +6,7 @@ import {
   MoreHorizontal, Paperclip, Check, Play, HelpCircle, 
   Coins, Terminal, Users, ArrowUpRight, ArrowLeft,
   BookOpen, FileText, Briefcase, ExternalLink, Calendar,
-  MapPin, ShieldAlert, Award
+  MapPin, ShieldAlert, Award, AlertCircle, RefreshCw
 } from 'lucide-react';
 
 // Primitives
@@ -40,7 +40,8 @@ interface AppleButtonProps {
 export const AppleButton: React.FC<AppleButtonProps> = ({ label, onClick, full = false }) => (
   <button 
     onClick={onClick}
-    className={`group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-semibold text-sm px-6 py-3.5 transition-all hover:bg-white/90 active:scale-[0.98] ${full ? 'w-full' : ''} cursor-pointer`}
+    className="group inline-flex items-center justify-center gap-2 rounded-full bg-white text-black font-semibold text-sm px-6 py-3.5 transition-all hover:bg-white/90 active:scale-[0.98] cursor-pointer"
+    style={{ width: full ? '100%' : 'auto' }}
   >
     <LogoMark className="w-4 h-4 text-black" />
     <span>{label}</span>
@@ -55,7 +56,7 @@ interface SectionEyebrowProps {
 
 export const SectionEyebrow: React.FC<SectionEyebrowProps> = ({ label, tag }) => (
   <div className="inline-flex items-center gap-3.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.02]">
-    <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+    <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
     <span className="text-white text-xs font-semibold uppercase tracking-wider">{label}</span>
     {tag && (
       <span className="px-2 py-0.5 rounded-full border border-white/10 text-[10px] font-medium text-white/50 bg-white/[0.03]">
@@ -66,7 +67,7 @@ export const SectionEyebrow: React.FC<SectionEyebrowProps> = ({ label, tag }) =>
 );
 
 const gradientStyle: React.CSSProperties = {
-  backgroundImage: 'linear-gradient(to right, #091020 0%, #0B2551 12.5%, #A4F4FD 32.5%, #00d2ff 50%, #0B2551 67.5%, #091020 87.5%, #091020 100%)',
+  backgroundImage: 'linear-gradient(to right, #091020 0%, #0B2551 12.5%, #A4F4FD 32.5%, #3D81E3 50%, #0B2551 67.5%, #091020 87.5%, #091020 100%)',
   backgroundSize: '200% auto',
   WebkitBackgroundClip: 'text',
   backgroundClip: 'text',
@@ -81,10 +82,113 @@ interface LandingPageProps {
 
 type ActiveTabType = 'home' | 'solutions' | 'pricing' | 'blog' | 'docs' | 'careers';
 
+interface MockProposal {
+  id: string;
+  sender: string;
+  title: string;
+  desc: string;
+  time: string;
+  unread: boolean;
+  status: 'Pending Sign' | 'Approved' | 'Vetoed' | 'Flagged' | 'Executed';
+  creator: string;
+  amount: string;
+  recipient: string;
+  fullDesc: string;
+  signatures: number;
+  requiredSignatures: number;
+  aiSummary: string;
+  attachment: string;
+  logs: string[];
+}
+
+const INITIAL_MOCK_PROPOSALS: MockProposal[] = [
+  { 
+    id: 'prop-1', 
+    sender: 'Coop-Travel', 
+    title: 'GPU Server Rental', 
+    desc: 'Proposed by Marcus. 2/3 signatures received. Pending execution.', 
+    time: '9:41 AM', 
+    unread: true, 
+    status: 'Pending Sign',
+    creator: 'Marcus (AI Engineer)',
+    amount: '450 USDC',
+    recipient: '0xGPU_RENTAL_SERVICES_7c8A',
+    fullDesc: 'Here is the proposal details for the GPU Server Rental for our AI agent project. This will fund 3 high-performance GPU nodes for 30 days. The pricing matches our contract agreement and will be paid in USDC. Please sign the proposal so we can proceed with deployment.',
+    signatures: 2,
+    requiredSignatures: 3,
+    aiSummary: 'Valid expense request. Verified billing invoice attached. Recipient address matches registered service provider. Ample vault liquidity available. Low risk factor.',
+    attachment: 'invoice-gpu-rental.pdf',
+    logs: ['[09:40] Proposal created by Marcus', '[09:41] Signed by Sophia Chen']
+  },
+  { 
+    id: 'prop-2', 
+    sender: 'NomadNest', 
+    title: 'Office Space Deposit', 
+    desc: 'Vetoed by Sophia. Reason: address mismatch on landlord KYC.', 
+    time: '8:12 AM', 
+    unread: true, 
+    status: 'Vetoed',
+    creator: 'David Lim (Treasurer)',
+    amount: '1,500 USDC',
+    recipient: '0xLANDLORD_ESCROW_ADDRESS_921b',
+    fullDesc: 'Deposit for our joint workspace hub in Cape Town. Sophia flagged that the landlord\'s payout address did not match the KYC contract details. Veto lock has been invoked to allow the group to reconcile verification documents.',
+    signatures: 2,
+    requiredSignatures: 2,
+    aiSummary: 'WARNING: Recipient address mismatch detected. The payout address is different from the registered landlord registry contract. Suggest flag or rejection.',
+    attachment: 'workspace-lease-draft.pdf',
+    logs: ['[08:00] Proposal created by David Lim', '[08:05] Signed by Andrew', '[08:12] VETO invoked by Sophia Chen. Reason: Address mismatch']
+  },
+  { 
+    id: 'prop-3', 
+    sender: 'CommuniFund', 
+    title: 'Marketing Grant', 
+    desc: 'Escalated to dispute voting center. Proposal flagged as high-risk.', 
+    time: 'Yesterday', 
+    unread: false,
+    status: 'Flagged',
+    creator: '0xGUEST_CONTRIBUTOR_a9d2',
+    amount: '5,000 MONAD',
+    recipient: '0xSHADY_PROMOTER_ADDRESS_1a3f',
+    fullDesc: 'Funding for an unverified marketing campaign. The proposal was flagged because the creator has a low reputation score and the recipient address is blacklisted in community lists.',
+    signatures: 1,
+    requiredSignatures: 3,
+    aiSummary: 'CAUTION: Highly suspicious activity. Proposer has low reputation. Recipient address matches known phishing list. Vote REJECT recommended.',
+    attachment: 'shady-marketing-proposal.pdf',
+    logs: ['[Yesterday] Proposal created by 0xGUEST', '[Yesterday] FLAGGED & LOCKED by Treasurer. Escalated to community dispute voting. Voting deadline: 24h.']
+  },
+  { 
+    id: 'prop-4', 
+    sender: 'Coop-Travel', 
+    title: 'Rent Payout Executed', 
+    desc: 'Transaction confirmed on Monad block #14289052. Total $4,200.', 
+    time: 'Yesterday', 
+    unread: false,
+    status: 'Executed',
+    creator: 'Sophia Chen (Treasurer)',
+    amount: '4,200 USDT',
+    recipient: '0xPROPERTIES_MANAGEMENT_d892',
+    fullDesc: 'Monthly rental fee for our co-living villa in Bali. Signature threshold 3-of-3 satisfied, veto lock period passed without disputes, and funds successfully discharged.',
+    signatures: 3,
+    requiredSignatures: 3,
+    aiSummary: 'Verified transaction. Executed on Monad Testnet block #14289052. Gas paid: 85,000 gwei.',
+    attachment: 'bali-lease-receipt.pdf',
+    logs: ['[2 Days Ago] Proposal created', '[2 Days Ago] Signed by Sophia, Andrew, and Marcus', '[Yesterday] 24h Lock expired. Executed on-chain by Sophia.']
+  }
+];
+
 export default function LandingPage({ onLaunchApp }: LandingPageProps) {
   const [activeTab, setActiveTab] = useState<ActiveTabType>('home');
   const [yearly, setYearly] = useState(false);
   const [currentTime, setCurrentTime] = useState('Wed May 6 1:09 PM');
+
+  // Interactive Mockup States
+  const [mockProposals, setMockProposals] = useState<MockProposal[]>(INITIAL_MOCK_PROPOSALS);
+  const [mockSelectedId, setMockSelectedId] = useState<string>('prop-1');
+  const [mockSidebarFilter, setMockSidebarFilter] = useState<'all' | 'veto' | 'dispute' | 'completed' | 'reputation'>('all');
+  const [mockNotification, setMockNotification] = useState<string | null>(null);
+
+  // Interactive Documentation States
+  const [activeDocSection, setActiveDocSection] = useState<string>('intro');
 
   useEffect(() => {
     const updateTime = () => {
@@ -121,6 +225,98 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
+
+  // Mockup Interactive Actions
+  const triggerNotification = (msg: string) => {
+    setMockNotification(msg);
+    setTimeout(() => {
+      setMockNotification(null);
+    }, 4000);
+  };
+
+  const handleMockSign = (proposalId: string) => {
+    setMockProposals(prev => prev.map(p => {
+      if (p.id !== proposalId) return p;
+      if (p.status !== 'Pending Sign') {
+        triggerNotification(`Cannot sign proposal: Already ${p.status}`);
+        return p;
+      }
+      const nextSigs = p.signatures + 1;
+      let nextStatus = p.status;
+      if (nextSigs >= p.requiredSignatures) {
+        nextStatus = 'Approved';
+        triggerNotification('Signature threshold met! Proposal Approved. 24h Veto window started.');
+      } else {
+        triggerNotification(`Signed proposal successfully (${nextSigs}/${p.requiredSignatures})`);
+      }
+      return {
+        ...p,
+        signatures: nextSigs,
+        status: nextStatus,
+        logs: [...p.logs, `[Now] Signed by You (0xUSER_VIRTUAL_WALLET)`]
+      };
+    }));
+  };
+
+  const handleMockVeto = (proposalId: string) => {
+    setMockProposals(prev => prev.map(p => {
+      if (p.id !== proposalId) return p;
+      if (p.status !== 'Pending Sign' && p.status !== 'Approved') {
+        triggerNotification(`Cannot veto proposal in status: ${p.status}`);
+        return p;
+      }
+      triggerNotification('Veto lock active! Execution paused for 24 hours.');
+      return {
+        ...p,
+        status: 'Vetoed',
+        signatures: 0,
+        logs: [...p.logs, `[Now] VETOED by You. Reason: Suspicious activity flag.`]
+      };
+    }));
+  };
+
+  const handleMockFlag = (proposalId: string) => {
+    setMockProposals(prev => prev.map(p => {
+      if (p.id !== proposalId) return p;
+      if (p.status !== 'Approved' && p.status !== 'Vetoed') {
+        triggerNotification(`Cannot flag proposal: Must be Approved or Vetoed`);
+        return p;
+      }
+      triggerNotification('Proposal Flagged & Locked! Escalated to Dispute Center.');
+      return {
+        ...p,
+        status: 'Flagged',
+        logs: [...p.logs, `[Now] FLAGGED by You. Voting period initiated.`]
+      };
+    }));
+  };
+
+  const handleMockExecute = (proposalId: string) => {
+    setMockProposals(prev => prev.map(p => {
+      if (p.id !== proposalId) return p;
+      if (p.status !== 'Approved') {
+        triggerNotification(`Cannot execute: Signature threshold not fully met.`);
+        return p;
+      }
+      triggerNotification('Transaction Discharged! Funds transferred successfully.');
+      return {
+        ...p,
+        status: 'Executed',
+        logs: [...p.logs, `[Now] EXECUTED on-chain by You. Block confirmed.`]
+      };
+    }));
+  };
+
+  // Filtered mock proposals list
+  const filteredMockProposals = mockProposals.filter(p => {
+    if (mockSidebarFilter === 'all') return true;
+    if (mockSidebarFilter === 'veto') return p.status === 'Vetoed';
+    if (mockSidebarFilter === 'dispute') return p.status === 'Flagged';
+    if (mockSidebarFilter === 'completed') return p.status === 'Executed';
+    return true;
+  });
+
+  const selectedMockProposal = mockProposals.find(p => p.id === mockSelectedId) || mockProposals[0];
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#0c0c0c] text-white">
@@ -183,7 +379,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
               onClick={(e) => handleTabClick(tab.id as ActiveTabType, e)}
               href={`#${tab.id}`}
               className={`text-sm font-medium transition-colors cursor-pointer ${
-                activeTab === tab.id ? 'text-[#E5A93B] font-bold border-b border-[#E5A93B]/40 pb-0.5' : 'text-white'
+                activeTab === tab.id ? 'text-brand font-bold border-b border-brand/40 pb-0.5' : 'text-white'
               }`}
             >
               {tab.label}
@@ -282,8 +478,15 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
               </div>
             </div>
 
-            {/* Section 4 — Inbox mockup (Cooperative Vault Mockup) */}
+            {/* Section 4 — Inbox mockup (Cooperative Vault Mockup - Fully Interactive In-Place) */}
             <section className="relative z-20 max-w-6xl mx-auto px-6 py-16 md:py-24">
+              {mockNotification && (
+                <div className="fixed top-24 right-8 z-[100] bg-brand text-white border border-white/20 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 text-xs font-semibold animate-fade-in">
+                  <Sparkles className="w-4 h-4 text-white animate-spin" />
+                  <span>{mockNotification}</span>
+                </div>
+              )}
+
               <div 
                 className="relative rounded-2xl overflow-hidden border border-white/10 bg-[#0e1014]/90 backdrop-blur-2xl shadow-2xl"
               >
@@ -294,7 +497,10 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
                     <div className="w-3 h-3 rounded-full bg-[#febc2e]" />
                     <div className="w-3 h-3 rounded-full bg-[#28c840]" />
                   </div>
-                  <div className="text-xs text-white/50 font-mono">GlobalSave — NomadNest Vault</div>
+                  <div className="text-xs text-white/50 font-mono flex items-center gap-2">
+                    <span>GlobalSave Simulator Console</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
+                  </div>
                   <div className="w-12" />
                 </div>
 
@@ -304,7 +510,9 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
                   <div className="col-span-3 border-r border-white/10 bg-black/30 p-4 flex flex-col justify-between">
                     <div>
                       <button 
-                        onClick={onLaunchApp}
+                        onClick={() => {
+                          triggerNotification('Simulating creation of a new Monad cooperative vault...');
+                        }}
                         className="w-full flex items-center justify-center gap-2 rounded-lg bg-white text-black text-xs font-bold px-3 py-2.5 shadow hover:bg-white/90 active:scale-[0.98] transition-all cursor-pointer"
                       >
                         <Sparkles className="w-3.5 h-3.5 text-black" />
@@ -313,24 +521,24 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
 
                       <div className="mt-6 space-y-1">
                         {[
-                          { label: 'Active Vaults', icon: Landmark, count: 4, active: true },
-                          { label: 'Veto Center', icon: ShieldCheck, count: 1 },
-                          { label: 'Dispute Center', icon: Gavel, count: 2 },
-                          { label: 'Completed Savings', icon: Coins },
-                          { label: 'Reputation Logs', icon: Users },
+                          { id: 'all', label: 'Active Vaults', icon: Landmark, count: mockProposals.length },
+                          { id: 'veto', label: 'Veto Center', icon: ShieldAlert, count: mockProposals.filter(p => p.status === 'Vetoed').length },
+                          { id: 'dispute', label: 'Dispute Center', icon: Gavel, count: mockProposals.filter(p => p.status === 'Flagged').length },
+                          { id: 'completed', label: 'Completed Savings', icon: Coins, count: mockProposals.filter(p => p.status === 'Executed').length },
+                          { id: 'reputation', label: 'Reputation Logs', icon: Users }
                         ].map((item) => (
                           <div 
-                            key={item.label}
-                            onClick={onLaunchApp}
+                            key={item.id}
+                            onClick={() => setMockSidebarFilter(item.id as any)}
                             className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                              item.active ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                              mockSidebarFilter === item.id ? 'bg-white/10 text-white font-medium border-l-2 border-brand' : 'text-white/60 hover:bg-white/5 hover:text-white'
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
                               <item.icon className="w-4 h-4" />
                               <span className="text-xs">{item.label}</span>
                             </div>
-                            {item.count && (
+                            {item.count !== undefined && item.count > 0 && (
                               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-white/80">
                                 {item.count}
                               </span>
@@ -344,20 +552,16 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
                       <div className="text-[10px] font-bold text-white/40 uppercase tracking-widest px-3 mb-2">My Co-ops</div>
                       <div className="space-y-1.5 px-3 text-xs">
                         <div className="flex items-center gap-2 text-white/70">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#00d2ff]" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-brand" />
                           <span>NomadNest (USDC)</span>
                         </div>
                         <div className="flex items-center gap-2 text-white/70">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#A4F4FD]" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-brand" />
                           <span>CommuniFund (MONAD)</span>
                         </div>
                         <div className="flex items-center gap-2 text-white/70">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b]" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-brand" />
                           <span>Coop-Travel (USDT)</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-white/70">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#10b981]" />
-                          <span>Global-Save (MON)</span>
                         </div>
                       </div>
                     </div>
@@ -365,116 +569,175 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
 
                   {/* Message / Proposal List */}
                   <div className="col-span-4 border-r border-white/10 bg-black/10 flex flex-col">
-                    <div className="p-3 border-b border-white/10 flex items-center gap-2 bg-black/20">
-                      <Search className="w-3.5 h-3.5 text-white/30" />
-                      <input 
-                        type="text" 
-                        placeholder="Search proposals..." 
-                        disabled
-                        className="bg-transparent border-none text-xs text-white/90 placeholder-white/30 focus:outline-none w-full"
+                    <div className="p-3 border-b border-white/10 flex items-center justify-between bg-black/20">
+                      <span className="text-[10px] font-mono text-white/40 uppercase tracking-wider">
+                        {mockSidebarFilter === 'reputation' ? 'Co-op Signatories' : 'Proposals'}
+                      </span>
+                      <RefreshCw 
+                        className="w-3.5 h-3.5 text-white/40 hover:text-white cursor-pointer"
+                        onClick={() => {
+                          setMockProposals(INITIAL_MOCK_PROPOSALS);
+                          setMockSelectedId('prop-1');
+                          setMockSidebarFilter('all');
+                          triggerNotification('Mock simulator variables reset to defaults.');
+                        }}
+                        title="Reset simulation data"
                       />
                     </div>
 
                     <div className="flex-1 overflow-y-auto divide-y divide-white/5">
-                      {[
-                        { sender: 'Coop-Travel', title: 'GPU Server Rental', desc: 'Proposed by Marcus. 2/3 signatures received. Pending execution.', time: '9:41 AM', unread: true, active: true },
-                        { sender: 'NomadNest', title: 'Office Space Deposit', desc: 'Vetoed by Sophia. Reason: address mismatch on landlord KYC.', time: '8:12 AM', unread: true, vetoed: true },
-                        { sender: 'CommuniFund', title: 'Marketing Grant', desc: 'Escalated to dispute voting center. Proposal flagged as high-risk.', time: 'Yesterday', flagged: true },
-                        { sender: 'Coop-Travel', title: 'Rent Payout Executed', desc: 'Transaction confirmed on Monad block #14289052. Total $4,200.', time: 'Yesterday', executed: true },
-                        { sender: 'NomadNest', title: 'Member Onboarding', desc: '0x7c4f... joined the cooperative vault. Reputation assigned 100.', time: 'Mon', verified: true }
-                      ].map((msg, i) => (
-                        <div 
-                          key={i}
-                          onClick={onLaunchApp}
-                          className={`p-3.5 cursor-pointer transition-colors relative ${
-                            msg.active ? 'bg-white/5 text-white' : 'hover:bg-white/[0.02] text-white/70'
-                          }`}
-                        >
-                          {msg.unread && (
-                            <span className="absolute top-4 left-2 w-1.5 h-1.5 rounded-full bg-brand" />
-                          )}
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-bold text-white">{msg.sender}</span>
-                            <span className="text-[10px] text-white/40">{msg.time}</span>
-                          </div>
-                          <div className="text-xs font-semibold text-white/95 mb-0.5 truncate">{msg.title}</div>
-                          <div className="text-[11px] text-white/50 line-clamp-2 leading-relaxed">{msg.desc}</div>
-                          
-                          <div className="mt-2 flex gap-1">
-                            {msg.active && <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand font-medium">Pending Sign</span>}
-                            {msg.vetoed && <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium">Vetoed</span>}
-                            {msg.flagged && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">Flagged</span>}
-                            {msg.executed && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">Executed</span>}
-                          </div>
+                      {mockSidebarFilter === 'reputation' ? (
+                        // Reputation logs view
+                        <div className="divide-y divide-white/5">
+                          {[
+                            { name: 'Sophia Chen', address: '0x3ea7...8b1e', rep: 100, role: 'Treasurer' },
+                            { name: 'Marcus (AI Engineer)', address: '0x9d2a...1a3f', rep: 100, role: 'Validator' },
+                            { name: 'David Lim', address: '0x7c4f...d892', rep: 88, role: 'Co-signer' },
+                            { name: 'Shady Proposer', address: '0x1b8c...9e3a', rep: 10, role: 'Guest' }
+                          ].map((member, idx) => (
+                            <div key={idx} className="p-4 flex items-center justify-between hover:bg-white/[0.01]">
+                              <div>
+                                <div className="text-xs font-bold text-white">{member.name}</div>
+                                <div className="text-[10px] text-white/40 font-mono mt-0.5">{member.address}</div>
+                              </div>
+                              <div className="text-right">
+                                <span className={`text-xs font-bold font-mono ${member.rep > 50 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {member.rep} REP
+                                </span>
+                                <div className="text-[10px] text-white/30 mt-0.5">{member.role}</div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        // Standard proposals list
+                        filteredMockProposals.map((msg) => (
+                          <div 
+                            key={msg.id}
+                            onClick={() => setMockSelectedId(msg.id)}
+                            className={`p-3.5 cursor-pointer transition-colors relative ${
+                              msg.id === mockSelectedId ? 'bg-white/5 text-white border-r-2 border-brand' : 'hover:bg-white/[0.02] text-white/70'
+                            }`}
+                          >
+                            {msg.unread && (
+                              <span className="absolute top-4 left-2 w-1.5 h-1.5 rounded-full bg-brand" />
+                            )}
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-bold text-white">{msg.sender}</span>
+                              <span className="text-[10px] text-white/40">{msg.time}</span>
+                            </div>
+                            <div className="text-xs font-semibold text-white/95 mb-0.5 truncate">{msg.title}</div>
+                            <div className="text-[11px] text-white/50 line-clamp-2 leading-relaxed">{msg.desc}</div>
+                            
+                            <div className="mt-2 flex gap-1">
+                              {msg.status === 'Pending Sign' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-brand/20 text-brand font-medium">Pending Sign</span>}
+                              {msg.status === 'Approved' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-medium">Approved</span>}
+                              {msg.status === 'Vetoed' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 font-medium">Vetoed</span>}
+                              {msg.status === 'Flagged' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-medium">Flagged</span>}
+                              {msg.status === 'Executed' && <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 font-medium">Executed</span>}
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
 
                   {/* Reader / Details Panel */}
                   <div className="col-span-5 flex flex-col bg-[#111317]/50">
-                    <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between bg-black/10">
-                      <div className="flex items-center gap-2">
-                        <button className="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center text-white/60 hover:text-white cursor-pointer" onClick={onLaunchApp}>
-                          <Reply className="w-4 h-4" />
-                        </button>
-                        <button className="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center text-white/60 hover:text-white cursor-pointer" onClick={onLaunchApp}>
-                          <Forward className="w-4 h-4" />
-                        </button>
-                        <button className="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center text-white/60 hover:text-white cursor-pointer" onClick={onLaunchApp}>
-                          <Archive className="w-4 h-4" />
-                        </button>
-                        <button className="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center text-red-400/80 hover:text-red-400 cursor-pointer" onClick={onLaunchApp}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                    {mockSidebarFilter === 'reputation' ? (
+                      <div className="p-6 flex flex-col items-center justify-center h-full text-center space-y-4">
+                        <Users className="w-12 h-12 text-brand animate-pulse" />
+                        <h4 className="text-sm font-bold text-white font-display">On-Chain Reputation System</h4>
+                        <p className="text-xs text-white/50 max-w-xs leading-relaxed">
+                          Reputation is earned via successful vault cycles and positive governance votes. Proposers of flagged bills that fail dispute votes suffer direct slashing penalties.
+                        </p>
                       </div>
-                      <button className="w-7 h-7 rounded-md hover:bg-white/5 flex items-center justify-center text-white/60 cursor-pointer" onClick={onLaunchApp}>
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </div>
+                    ) : (
+                      <>
+                        {/* Toolbar */}
+                        <div className="h-12 border-b border-white/10 px-4 flex items-center justify-between bg-black/10">
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={() => handleMockSign(selectedMockProposal.id)}
+                              className="px-2 py-1 rounded bg-brand text-black text-[10px] font-bold hover:bg-brand/90 transition-colors cursor-pointer"
+                              title="Sign this Multi-Sig Proposal"
+                            >
+                              Sign Payout
+                            </button>
+                            <button 
+                              onClick={() => handleMockVeto(selectedMockProposal.id)}
+                              className="px-2 py-1 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold hover:bg-orange-500/20 transition-colors cursor-pointer"
+                              title="Veto transaction (24h Lock)"
+                            >
+                              Veto Payout
+                            </button>
+                            <button 
+                              onClick={() => handleMockFlag(selectedMockProposal.id)}
+                              className="w-7 h-7 rounded-md hover:bg-white/5 border border-white/10 flex items-center justify-center text-red-400/80 hover:text-red-400 cursor-pointer" 
+                              title="Flag proposal & start dispute vote"
+                            >
+                              <Gavel className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                              onClick={() => handleMockExecute(selectedMockProposal.id)}
+                              className="w-7 h-7 rounded-md hover:bg-white/5 border border-white/10 flex items-center justify-center text-green-400/80 hover:text-green-400 cursor-pointer" 
+                              title="Execute payout (if Approved)"
+                            >
+                              <Play className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                          <span className="text-[10px] font-mono text-white/30">ID: {selectedMockProposal.id}</span>
+                        </div>
 
-                    <div className="flex-1 overflow-y-auto p-5 space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h2 className="text-base font-bold text-white font-display">GPU Server Rental</h2>
-                          <div className="mt-1 flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#00d2ff] to-[#0B2551] flex items-center justify-center text-[10px] font-bold text-white shadow">M</div>
-                            <span className="text-xs font-semibold text-white/80">Marcus</span>
-                            <span className="text-xs text-white/40">to Coop-Travel · 9:41 AM</span>
+                        {/* Reader Body */}
+                        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h2 className="text-base font-bold text-white font-display">{selectedMockProposal.title}</h2>
+                              <div className="mt-1 flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-brand/20 border border-brand/30 flex items-center justify-center text-[10px] font-bold text-brand shadow">M</div>
+                                <span className="text-xs font-semibold text-white/80">{selectedMockProposal.creator}</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-[10px] px-2 py-0.5 rounded-full border border-white/10 text-white/60 bg-white/5 font-mono">{selectedMockProposal.amount}</span>
+                              <span className="text-[9px] block text-white/30 font-mono mt-1">Sigs: {selectedMockProposal.signatures}/{selectedMockProposal.requiredSignatures}</span>
+                            </div>
+                          </div>
+
+                          {/* AI Summary Card */}
+                          <div className="p-3.5 rounded-xl border border-white/5 bg-white/[0.02] space-y-1">
+                            <div className="flex items-center gap-1.5 text-xs text-brand font-semibold">
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>AI Risk Assessment</span>
+                            </div>
+                            <p className="text-xs text-white/70 leading-relaxed font-sans">
+                              {selectedMockProposal.aiSummary}
+                            </p>
+                          </div>
+
+                          {/* Core description */}
+                          <div className="space-y-3 text-xs text-white/70 leading-relaxed font-sans">
+                            <p className="font-semibold text-white">Proposal Description:</p>
+                            <p>{selectedMockProposal.fullDesc}</p>
+                            <p className="text-white/40">Recipient: <span className="font-mono text-[10px] text-brand">{selectedMockProposal.recipient}</span></p>
+                          </div>
+
+                          {/* Telemetry log trace */}
+                          <div className="p-3 bg-black/30 border border-white/5 rounded-xl space-y-1">
+                            <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest font-mono">Contract Telemetry Logs</span>
+                            <div className="space-y-1 font-mono text-[9px] text-green-400/85">
+                              {selectedMockProposal.logs.map((log, lIdx) => (
+                                <div key={lIdx} className="flex items-center gap-1">
+                                  <Terminal className="w-2.5 h-2.5 shrink-0" />
+                                  <span>{log}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full border border-white/10 text-white/60 bg-white/5">USDC Pool</span>
-                      </div>
-
-                      <div className="p-3.5 rounded-xl border border-white/5 bg-white/[0.02] space-y-1">
-                        <div className="flex items-center gap-1.5 text-xs text-[#A4F4FD] font-semibold">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>AI Risk Assessment</span>
-                        </div>
-                        <p className="text-xs text-white/70 leading-relaxed font-sans">
-                          Valid expense request. Verified billing invoice attached. Recipient address matches registered service provider. Ample vault liquidity available. Low risk factor.
-                        </p>
-                      </div>
-
-                      <div className="space-y-3 text-xs text-white/70 leading-relaxed font-sans">
-                        <p>Hi team,</p>
-                        <p>
-                          Here is the proposal details for the GPU Server Rental for our AI agent project. This will fund 3 high-performance GPU nodes for 30 days.
-                        </p>
-                        <p>
-                          The pricing matches our contract agreement and will be paid in USDC. Please sign the proposal so we can proceed with deployment.
-                        </p>
-                        <p className="text-white/40">— Marcus (AI Engineer)</p>
-                      </div>
-
-                      <div className="flex items-center justify-between p-2.5 rounded-lg border border-white/10 bg-black/20 hover:bg-black/30 transition-colors cursor-pointer" onClick={onLaunchApp}>
-                        <div className="flex items-center gap-2 text-xs text-white/80">
-                          <Paperclip className="w-4 h-4 text-white/40" />
-                          <span>invoice-gpu-rental.pdf</span>
-                        </div>
-                        <span className="text-[10px] text-white/40">142 KB</span>
-                      </div>
-                    </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -613,7 +876,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
               <div className="c3-watermark-container">
                 <div className="c3-watermark-main select-none pointer-events-none">
                   <span className="c3-watermark-line-1">Global savings.</span>
-                  <span className="c3-watermark-line-2">Decentralized</span>
+                  <span className="c3-watermark-line-2 font-display text-brand">Decentralized</span>
                 </div>
               </div>
 
@@ -691,7 +954,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
                     
                     <button 
                       onClick={onLaunchApp}
-                      className="c3-btn"
+                      className="c3-btn animate-pulse hover:animate-none border border-brand bg-[#0c0c0c] text-white hover:bg-brand hover:text-black font-semibold shadow-lg shadow-brand/10"
                     >
                       Choose Plan
                     </button>
@@ -706,7 +969,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
                 <div 
                   className="absolute inset-0 pointer-events-none opacity-30" 
                   style={{
-                    background: 'radial-gradient(600px circle at 50% 0%, rgba(255,255,255,0.15), transparent 70%)'
+                    background: 'radial-gradient(600px circle at 50% 0%, rgba(255, 255, 255, 0.15), transparent 70%)'
                   }}
                 />
 
@@ -800,11 +1063,11 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
               ].map((solution, i) => (
                 <div key={i} className="liquid-glass rounded-2xl p-6 border border-white/5 shadow-xl bg-black/30 flex flex-col justify-between min-h-[400px]">
                   <div>
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/10 w-fit mb-6 text-[#E5A93B]">
+                    <div className="p-3 bg-white/5 rounded-xl border border-white/10 w-fit mb-6 text-brand">
                       <solution.icon className="w-5 h-5" />
                     </div>
                     <h3 className="text-lg font-bold text-white font-display mb-1">{solution.title}</h3>
-                    <div className="text-xs text-[#E5A93B] font-mono mb-4">{solution.subtitle}</div>
+                    <div className="text-xs text-brand font-mono mb-4">{solution.subtitle}</div>
                     <ul className="space-y-2.5 text-xs text-white/60 leading-relaxed font-sans">
                       {solution.bullets.map((b, j) => (
                         <li key={j} className="flex items-start gap-2">
@@ -892,10 +1155,10 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
                     <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/60 font-sans">{post.tag}</span>
                   </div>
                   
-                  <h3 className="text-xl font-bold text-white font-display mb-2 hover:text-[#E5A93B] transition-colors">{post.title}</h3>
+                  <h3 className="text-xl font-bold text-white font-display mb-2 hover:text-brand transition-colors">{post.title}</h3>
                   <p className="text-xs text-white/50 leading-relaxed font-sans mb-4">{post.excerpt}</p>
                   
-                  <div className="flex items-center justify-between text-xs font-semibold text-[#E5A93B]">
+                  <div className="flex items-center justify-between text-xs font-semibold text-brand">
                     <span>Read Full Article</span>
                     <span className="text-white/30 font-mono">{post.readTime}</span>
                   </div>
@@ -905,7 +1168,7 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
           </motion.div>
         )}
 
-        {/* Detailed Documentation Page */}
+        {/* Detailed Documentation Page (Fully Interactive, Selecting Sidebar Items Changes Contents In-Place) */}
         {activeTab === 'docs' && (
           <motion.div
             key="docs"
@@ -926,74 +1189,224 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
               </button>
 
               <div className="liquid-glass rounded-xl p-4 border border-white/5 bg-black/20 text-xs space-y-3">
-                <div className="font-bold text-white/50 uppercase tracking-widest font-mono text-[10px]">Getting Started</div>
+                <div className="font-bold text-white/40 uppercase tracking-widest font-mono text-[10px]">Getting Started</div>
                 <div className="space-y-1.5 font-sans">
-                  <div className="text-[#E5A93B] font-semibold cursor-pointer">Introduction</div>
-                  <div className="text-white/60 hover:text-white cursor-pointer">Quickstart Guide</div>
-                  <div className="text-white/60 hover:text-white cursor-pointer">Monad Integration</div>
+                  {[
+                    { id: 'intro', label: 'Introduction' },
+                    { id: 'quickstart', label: 'Quickstart Guide' },
+                    { id: 'monad', label: 'Monad Integration' }
+                  ].map(sec => (
+                    <div 
+                      key={sec.id}
+                      onClick={() => setActiveDocSection(sec.id)}
+                      className={`cursor-pointer transition-colors ${
+                        activeDocSection === sec.id ? 'text-brand font-bold pl-1 border-l border-brand/50' : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      {sec.label}
+                    </div>
+                  ))}
                 </div>
-                <div className="font-bold text-white/50 uppercase tracking-widest font-mono text-[10px] pt-2">Contract API</div>
+                
+                <div className="font-bold text-white/40 uppercase tracking-widest font-mono text-[10px] pt-2">Contract API</div>
                 <div className="space-y-1.5 font-sans">
-                  <div className="text-white/60 hover:text-white cursor-pointer">Vault Operations</div>
-                  <div className="text-white/60 hover:text-white cursor-pointer">Multi-Sig Rules</div>
-                  <div className="text-white/60 hover:text-white cursor-pointer">Disputes & Vetoes</div>
+                  {[
+                    { id: 'vaults', label: 'Vault Operations' },
+                    { id: 'multisig', label: 'Multi-Sig Rules' },
+                    { id: 'disputes', label: 'Disputes & Vetoes' }
+                  ].map(sec => (
+                    <div 
+                      key={sec.id}
+                      onClick={() => setActiveDocSection(sec.id)}
+                      className={`cursor-pointer transition-colors ${
+                        activeDocSection === sec.id ? 'text-brand font-bold pl-1 border-l border-brand/50' : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      {sec.label}
+                    </div>
+                  ))}
                 </div>
-                <div className="font-bold text-white/50 uppercase tracking-widest font-mono text-[10px] pt-2">Agent API</div>
+
+                <div className="font-bold text-white/40 uppercase tracking-widest font-mono text-[10px] pt-2">Agent API</div>
                 <div className="space-y-1.5 font-sans">
-                  <div className="text-white/60 hover:text-white cursor-pointer">JSON-RPC Endpoints</div>
-                  <div className="text-white/60 hover:text-white cursor-pointer">Telemetry Logs</div>
+                  {[
+                    { id: 'rpc', label: 'JSON-RPC Endpoints' },
+                    { id: 'telemetry', label: 'Telemetry Logs' }
+                  ].map(sec => (
+                    <div 
+                      key={sec.id}
+                      onClick={() => setActiveDocSection(sec.id)}
+                      className={`cursor-pointer transition-colors ${
+                        activeDocSection === sec.id ? 'text-brand font-bold pl-1 border-l border-brand/50' : 'text-white/60 hover:text-white'
+                      }`}
+                    >
+                      {sec.label}
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
             {/* Right details content (9 cols) */}
             <div className="md:col-span-9 space-y-6">
-              <SectionEyebrow label="Developer Reference" tag="V0.8.20 Contract" />
-              <h1 className="text-4xl font-semibold tracking-tight font-display">
-                API & Developer Documentation
-              </h1>
+              <SectionEyebrow label="Documentation Viewer" tag={`Section: ${activeDocSection.toUpperCase()}`} />
               
-              <div className="space-y-4 text-xs text-white/70 leading-relaxed font-sans">
-                <p>
-                  GlobalSave is entirely driven by on-chain Solidity logic. Developer agents and Web3 frontends interface with the contract via standard JSON-RPC endpoints. Below is the API reference for the core `GlobalSave.sol` functions.
-                </p>
-                
-                <h3 className="text-sm font-bold text-white font-display pt-4">1. Write Functions (State Modifying)</h3>
-                
-                <div className="space-y-3">
-                  {[
-                    { func: "contribute(uint256 _amount)", desc: "Allows members to deposit stablecoins or native MON into the vault pool. Emits Contributed." },
-                    { func: "createProposal(string title, string desc, uint256 amount, address recipient)", desc: "Initiates a new multi-sig shared expense proposal. Creator automatically co-signs. Emits ProposalCreated." },
-                    { func: "signProposal(uint256 _proposalId)", desc: "Co-signers approve the proposal to build consensus. When threshold is met, status becomes Approved and a 24h countdown starts. Emits ProposalSigned." },
-                    { func: "vetoPayout(uint256 _proposalId, string _reason)", desc: "Allows any member to temporarily lock a transaction for 24 hours. Adds 24h to countdown. Emits ProposalVetoed." },
-                    { func: "flagProposal(uint256 _proposalId, string _reason)", desc: "Permanently freezes the proposal and escalates the transaction to a community-wide voting dispute. Emits ProposalFlagged." }
-                  ].map((api, index) => (
-                    <div key={index} className="p-3.5 rounded-xl border border-white/5 bg-white/[0.01] space-y-1">
-                      <div className="font-mono text-white text-[11px] font-semibold flex items-center gap-1.5">
-                        <Terminal className="w-3.5 h-3.5 text-[#E5A93B]" />
-                        <span>{api.func}</span>
+              <div className="liquid-glass rounded-2xl p-6 border border-white/5 bg-[#0e1014]/80 shadow-xl space-y-4">
+                {activeDocSection === 'intro' && (
+                  <div className="space-y-4 animate-fade-in text-xs text-white/70 leading-relaxed">
+                    <h2 className="text-xl font-bold text-white font-display">Introduction to GlobalSave</h2>
+                    <p>
+                      GlobalSave is a decentralized micro-savings and shared expense co-signing registry protocol custom-engineered for Monad. It replaces manual reconciliation spreadsheets with automated smart contracts that enforce multi-party checks and deposit protection.
+                    </p>
+                    <p>
+                      By wrapping deposited cooperative assets and routing them directly to high-liquidity lending pools (e.g. Aave forks), GlobalSave keeps idle assets productive, mitigating currency depreciation risks.
+                    </p>
+                    <div className="p-4 rounded-xl border border-white/5 bg-white/[0.01] flex items-center gap-3">
+                      <Landmark className="w-8 h-8 text-brand shrink-0" />
+                      <div className="space-y-0.5">
+                        <span className="font-semibold text-white block">Key Benefit</span>
+                        <span className="text-white/50 text-[11px]">Sub-penny fees allow micro-contributions down to $0.10.</span>
                       </div>
-                      <p className="text-white/50">{api.desc}</p>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                )}
 
-                <h3 className="text-sm font-bold text-white font-display pt-4">2. Read Functions & JSON-RPC Telemetry</h3>
-                <p>
-                  AI judging agents query contract status using standard Solidity getters:
-                </p>
-                <div className="p-3.5 rounded-xl border border-white/5 bg-black/20 font-mono text-[10px] text-[#A4F4FD] space-y-1">
-                  <div>// Query total details of a savings group</div>
-                  <div>function getPoolDetails(uint256 poolId) public view returns (string name, uint256 balance, uint8 signersThreshold, uint256 proposals);</div>
-                  <div className="pt-2">// Check if an address has signed a proposal</div>
-                  <div>proposalSignatures(uint256 proposalId, address memberAddress) returns (bool signed);</div>
-                </div>
+                {activeDocSection === 'quickstart' && (
+                  <div className="space-y-4 animate-fade-in text-xs text-white/70 leading-relaxed">
+                    <h2 className="text-xl font-bold text-white font-display">Developer Quickstart</h2>
+                    <p>Follow these steps to compile, deploy, and verify the GlobalSave protocol locally:</p>
+                    
+                    <div className="space-y-2">
+                      <div className="font-semibold text-white">1. Install Foundry dependencies:</div>
+                      <pre className="p-3 bg-black/40 border border-white/5 rounded-xl font-mono text-[10px] text-[#A4F4FD]">
+                        cd backend{"\n"}
+                        forge install
+                      </pre>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="font-semibold text-white">2. Run Forge Solidity unit tests:</div>
+                      <pre className="p-3 bg-black/40 border border-white/5 rounded-xl font-mono text-[10px] text-[#A4F4FD]">
+                        forge test -vv
+                      </pre>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="font-semibold text-white">3. Restore and run the React dashboard:</div>
+                      <pre className="p-3 bg-black/40 border border-white/5 rounded-xl font-mono text-[10px] text-[#A4F4FD]">
+                        cd ../frontend{"\n"}
+                        npm install{"\n"}
+                        npm run dev
+                      </pre>
+                    </div>
+                  </div>
+                )}
+
+                {activeDocSection === 'monad' && (
+                  <div className="space-y-4 animate-fade-in text-xs text-white/70 leading-relaxed">
+                    <h2 className="text-xl font-bold text-white font-display">Monad Blockchain Integration</h2>
+                    <p>
+                      GlobalSave exploits Monad's parallel EVM execution capabilities. Because savings groups involve high-frequency micro-contributions across thousands of independent vaults, traditional L1/L2 fees would eat up user capital.
+                    </p>
+                    <p>
+                      On Monad, multiple members can contribute to different vaults simultaneously. The state storage mapping `members[wallet]` isolates slots to maximize parallelization throughput.
+                    </p>
+                    <div className="p-3 bg-brand/10 border border-brand/20 rounded-xl flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-brand" />
+                      <span className="font-mono text-[10px] text-brand">Monad Parallel Pipeline finalizes transaction state in 1 second.</span>
+                    </div>
+                  </div>
+                )}
+
+                {activeDocSection === 'vaults' && (
+                  <div className="space-y-4 animate-fade-in text-xs text-white/70 leading-relaxed">
+                    <h2 className="text-xl font-bold text-white font-display">Vault Operations API</h2>
+                    <p>These functions handle member savings contributions and balance query methods:</p>
+                    
+                    <div className="p-4 bg-black/30 border border-white/5 rounded-xl space-y-2 font-mono text-[10px]">
+                      <div>
+                        <span className="text-[#A4F4FD]">function contribute(uint256 _amount) external payable onlyMember</span>
+                        <p className="text-white/40 font-sans text-xs mt-1">Deposits stablecoins or MON directly into the cooperative treasury. Sweeps to yield vault if yieldEnabled is toggled.</p>
+                      </div>
+                      <div className="pt-2">
+                        <span className="text-[#A4F4FD]">function totalPoolBalance() public view returns (uint256)</span>
+                        <p className="text-white/40 font-sans text-xs mt-1">Queries the current active balance (excluding locked or vetoed payouts).</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeDocSection === 'multisig' && (
+                  <div className="space-y-4 animate-fade-in text-xs text-white/70 leading-relaxed">
+                    <h2 className="text-xl font-bold text-white font-display">Multi-Sig Co-Signing Rules</h2>
+                    <p>
+                      All cooperative payout expenditures must be initiated as proposals. Proposers define the recipient and the budget. The contract enforces signing constraints:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-white/60">
+                      <li>Signatures can only be added by registered members of the pool.</li>
+                      <li>Members cannot sign the same proposal multiple times.</li>
+                      <li>Once the signature threshold is satisfied, proposal status changes to Approved, starting the 24-hour individual veto countdown.</li>
+                    </ul>
+                  </div>
+                )}
+
+                {activeDocSection === 'disputes' && (
+                  <div className="space-y-4 animate-fade-in text-xs text-white/70 leading-relaxed">
+                    <h2 className="text-xl font-bold text-white font-display">Vetoes and Dispute Resolution</h2>
+                    <p>
+                      To prevent compromised keys or collusion, GlobalSave enforces two security checkpoints:
+                    </p>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl space-y-1">
+                        <span className="font-bold text-orange-400 block">vetoPayout(uint256 _proposalId, string _reason)</span>
+                        <p className="text-[11px] text-white/50">Any member can pause proposal execution for 24 hours. Adds 24h to the expiration countdown for thorough reviews.</p>
+                      </div>
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl space-y-1">
+                        <span className="font-bold text-red-400 block">flagProposal(uint256 _proposalId, string _reason)</span>
+                        <p className="text-[11px] text-white/50">Freezes the funds permanently and redirects the payout to a community dispute vote. If rejected, the creator's reputation is slashed.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {activeDocSection === 'rpc' && (
+                  <div className="space-y-4 animate-fade-in text-xs text-white/70 leading-relaxed">
+                    <h2 className="text-xl font-bold text-white font-display">JSON-RPC Endpoints Spec</h2>
+                    <p>Autonomous developer agents can interact with the contract using the following RPC formats:</p>
+                    
+                    <pre className="p-4 bg-black/40 border border-white/5 rounded-xl font-mono text-[10px] text-[#A4F4FD] overflow-x-auto leading-normal">
+{`{
+  "jsonrpc": "2.0",
+  "method": "eth_call",
+  "params": [{
+    "to": "0xGlobalSaveContractAddress",
+    "data": "0x5e8c1ab40000000000000000000000000000000000000000000000000000000000000001"
+  }, "latest"],
+  "id": 1
+}`}
+                    </pre>
+                  </div>
+                )}
+
+                {activeDocSection === 'telemetry' && (
+                  <div className="space-y-4 animate-fade-in text-xs text-white/70 leading-relaxed">
+                    <h2 className="text-xl font-bold text-white font-display">Telemetry & Log Parsing</h2>
+                    <p>
+                      Monitor on-chain telemetry logs by listening for events emitted by the smart contract. Subgraphs and indexing networks parse these blocks to display live transaction feeds:
+                    </p>
+                    <pre className="p-3 bg-black/30 border border-white/5 rounded-xl font-mono text-[9px] text-green-400">
+                      event Contributed(address indexed member, uint256 amount);{"\n"}
+                      event ProposalVetoed(uint256 indexed proposalId, address indexed vetoer);{"\n"}
+                      event DisputeResolved(uint256 indexed proposalId, bool approved);
+                    </pre>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
         )}
 
-        {/* Detailed Careers Page */}
+        {/* Humorous Careers Page (404 Jobs Not Found) */}
         {activeTab === 'careers' && (
           <motion.div
             key="careers"
@@ -1001,72 +1414,34 @@ export default function LandingPage({ onLaunchApp }: LandingPageProps) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.4 }}
-            className="relative z-20 max-w-4xl mx-auto px-6 py-12 md:py-20"
+            className="relative z-20 max-w-2xl mx-auto px-6 py-20 text-center flex flex-col items-center space-y-6"
           >
+            <div className="p-4 bg-rose-500/10 rounded-full border border-rose-500/20 text-rose-400">
+              <ShieldAlert className="w-12 h-12" />
+            </div>
+
+            <h1 className="text-6xl font-extrabold font-mono tracking-tight text-white">404</h1>
+            <h2 className="text-2xl font-bold text-white font-display">Jobs Not Found</h2>
+            
+            <div className="liquid-glass rounded-2xl p-6 border border-white/5 bg-black/30 space-y-4 text-xs text-white/60 leading-relaxed font-sans max-w-md">
+              <p>
+                We wanted to hire you, but our decentralized smart contract **vetoed** the hiring proposal.
+              </p>
+              <p>
+                All developer positions are currently occupied by **AI coding agents** working in parallel on the Monad devnet. They write 10,000 lines of Solidity per second, consume 0 coffee, and require 0 salary distributions.
+              </p>
+              <p className="text-[10px] text-white/40 italic">
+                Tip: To create a job opening, please log in to the dashboard, propose a "Hire Senior Developer" budget, and gather a 3-of-3 signature threshold from the co-signers.
+              </p>
+            </div>
+
             <button 
               onClick={() => setActiveTab('home')}
-              className="flex items-center gap-2 text-xs text-white/60 hover:text-white mb-8 cursor-pointer transition-colors bg-white/5 border border-white/10 px-4 py-2 rounded-full"
+              className="flex items-center gap-2 text-xs text-white/80 hover:text-white cursor-pointer transition-colors bg-white/5 border border-white/10 px-6 py-2.5 rounded-full"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Home</span>
             </button>
-
-            <div className="space-y-6 mb-12 text-center flex flex-col items-center">
-              <SectionEyebrow label="Careers" tag="Remote Positions" />
-              <h1 className="text-4xl md:text-6xl font-semibold tracking-tight font-display">
-                Build the future of co-ops.
-              </h1>
-              <p className="text-white/60 max-w-md text-sm leading-relaxed">
-                Join our remote-first engineering and design collectives developing the next generation of cooperative treasury frameworks for global users.
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {[
-                {
-                  role: "Lead Solidity Security Auditor",
-                  team: "Security Guild",
-                  location: "Remote (Global)",
-                  desc: "Responsible for reviewing gas-optimized proxy contracts, verifying multi-sig escrow parameters, and validating DeFi yield integrations on Monad EVM."
-                },
-                {
-                  role: "Senior Frontend Engineer - Web3 & Motion",
-                  team: "UI/UX Experience Group",
-                  location: "Remote (Global)",
-                  desc: "Own the design language, build custom SVG line charts, and engineer high-performance wallet consoles using React, Tailwind CSS, and Framer Motion."
-                },
-                {
-                  role: "Developer Relations Specialist",
-                  team: "Ecosystem Growth",
-                  location: "Remote (Monad Ecosystem)",
-                  desc: "Bridge the gap between our protocol and Monad builders. Educate communities about account abstraction, gas sponsorship, and on-chain voting models."
-                }
-              ].map((job, i) => (
-                <div key={i} className="liquid-glass rounded-2xl p-6 border border-white/5 bg-black/30 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <h3 className="text-lg font-bold text-white font-display">{job.role}</h3>
-                      <span className="text-[9px] px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/50 font-mono uppercase tracking-wider">{job.team}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-xs text-[#E5A93B] font-mono">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span>{job.location}</span>
-                    </div>
-                    
-                    <p className="text-xs text-white/50 leading-relaxed font-sans max-w-xl">{job.desc}</p>
-                  </div>
-                  
-                  <button 
-                    onClick={onLaunchApp}
-                    className="group px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer self-start sm:self-center"
-                  >
-                    <span>Apply Now</span>
-                    <ArrowUpRight className="w-4 h-4 text-white/40 group-hover:text-white transition-colors" />
-                  </button>
-                </div>
-              ))}
-            </div>
           </motion.div>
         )}
       </AnimatePresence>
