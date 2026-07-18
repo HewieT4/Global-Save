@@ -6,6 +6,9 @@ import {
 } from 'lucide-react';
 import { WalletState, SavingsGroup, Transaction, Proposal, GroupMember } from './types';
 import { INITIAL_GROUPS, INITIAL_TRANSACTIONS } from './data/mockData';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useAccount } from 'wagmi';
+import { useGlobalSave } from './hooks/useGlobalSave';
 
 // Subcomponents
 import WalletConsole from './components/WalletConsole';
@@ -138,8 +141,31 @@ export default function App() {
 
   const totalYieldCompounded = groups.reduce((acc, g) => acc + g.yieldAccrued, 0);
 
-  // Active selected group
   const activeGroup = groups.find(g => g.id === selectedGroupId) || groups[0];
+
+  const { isConnected, address: connectedAddress } = useAccount();
+
+  const {
+    totalPoolBalance,
+    requiredSignaturesCount,
+    yieldEnabled: isYieldEnabledOnChain,
+    contribute: writeContribute,
+    createProposal: writeCreateProposal,
+    signProposal: writeSignProposal,
+    vetoPayout: writeVetoPayout,
+    flagProposal: writeFlagProposal,
+    voteDispute: writeVoteDispute,
+    resolveDispute: writeResolveDispute,
+    executeProposal: writeExecuteProposal,
+    toggleYield: writeToggleYield
+  } = useGlobalSave(activeGroup?.contractAddress as `0x${string}`);
+
+  // Sync connected wallet address to local user identity
+  useEffect(() => {
+    if (isConnected && connectedAddress) {
+      setCurrentUserAddress(connectedAddress);
+    }
+  }, [isConnected, connectedAddress]);
 
   // Draw canvas charts on dashboard load or group selection
   useEffect(() => {
@@ -226,8 +252,17 @@ export default function App() {
   };
 
   // Callback 2: Deposit / Contribution
-  const handleContribute = (groupId: string, amount: number) => {
-    // 1. Deduct from wallet
+  const handleContribute = async (groupId: string, amount: number) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        await writeContribute(String(amount));
+        createOnChainTx('contribute', amount, activeGroup.symbol, `On-Chain Contribution initiated: ${amount} ${activeGroup.symbol}`);
+      } catch (err) {
+        console.error("On-chain contribution failed:", err);
+      }
+      return;
+    }
+
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
 
@@ -239,17 +274,14 @@ export default function App() {
       }
     }));
 
-    // 2. Add to pool savings
     setGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
-      
       const updatedMembers = g.members.map(m => {
         if (m.address === currentUserAddress) {
           return { ...m, totalContributed: m.totalContributed + amount };
         }
         return m;
       });
-
       return {
         ...g,
         totalSaved: g.totalSaved + amount,
@@ -261,7 +293,17 @@ export default function App() {
   };
 
   // Callback 3: Create Shared Expense Proposal
-  const handleCreateProposal = (groupId: string, title: string, description: string, amount: number, recipient: string) => {
+  const handleCreateProposal = async (groupId: string, title: string, description: string, amount: number, recipient: string) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        await writeCreateProposal(title, description, String(amount), recipient);
+        createOnChainTx('proposal_create', amount, activeGroup.symbol, `Proposed payout on-chain: ${title} for ${amount} ${activeGroup.symbol}`);
+      } catch (err) {
+        console.error("On-chain createProposal failed:", err);
+      }
+      return;
+    }
+
     const group = groups.find(g => g.id === groupId);
     if (!group) return;
 
@@ -275,7 +317,7 @@ export default function App() {
       recipient,
       creator: currentUserAddress,
       requiredSignatures: group.requiredSignatures,
-      currentSignatures: [currentUserAddress], // Creator signs automatically
+      currentSignatures: [currentUserAddress],
       status: 'pending_signatures',
       createdAt: new Date().toISOString()
     };
@@ -292,10 +334,20 @@ export default function App() {
   };
 
   // Callback 4: Sign Multi-Sig proposal
-  const handleSignProposal = (groupId: string, proposalId: string) => {
+  const handleSignProposal = async (groupId: string, proposalId: string) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        const numericId = Number(proposalId.replace('prop-', '')) || 0;
+        await writeSignProposal(numericId);
+        createOnChainTx('proposal_approve', 0, activeGroup.symbol, `Signed Multi-Sig proposal on-chain: ID ${numericId}`);
+      } catch (err) {
+        console.error("On-chain signProposal failed:", err);
+      }
+      return;
+    }
+
     setGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
-      
       const updatedProposals = g.proposals.map(p => {
         if (p.id !== proposalId) return p;
         if (p.currentSignatures.includes(currentUserAddress)) return p;
@@ -304,7 +356,6 @@ export default function App() {
         let nextStatus = p.status;
         let disputeDeadline = p.disputeDeadline;
 
-        // If threshold reached, transition to Approved with 24-hour safety lock period
         if (nextSignatures.length >= p.requiredSignatures) {
           nextStatus = 'approved';
           disputeDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -329,10 +380,20 @@ export default function App() {
   };
 
   // Callback 5: Flag & Lock Proposal (Dispute)
-  const handleFlagProposal = (groupId: string, proposalId: string, reason: string) => {
+  const handleFlagProposal = async (groupId: string, proposalId: string, reason: string) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        const numericId = Number(proposalId.replace('prop-', '')) || 0;
+        await writeFlagProposal(numericId, reason);
+        createOnChainTx('flag_lock', 0, activeGroup.symbol, `Flagged & locked payout on-chain: ID ${numericId}`);
+      } catch (err) {
+        console.error("On-chain flagProposal failed:", err);
+      }
+      return;
+    }
+
     setGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
-
       const updatedProposals = g.proposals.map(p => {
         if (p.id !== proposalId) return p;
         return {
@@ -341,7 +402,7 @@ export default function App() {
           flagger: currentUserAddress,
           flagReason: reason,
           votesApprove: [],
-          votesReject: [currentUserAddress] // Plagger votes reject automatically
+          votesReject: [currentUserAddress]
         };
       });
 
@@ -355,11 +416,21 @@ export default function App() {
     }
   };
 
-  // Callback 5.5: Veto Payout (Temporarily pause suspicious transactions for 24 hours)
-  const handleVetoProposal = (groupId: string, proposalId: string, reason: string) => {
+  // Callback 5.5: Veto Payout
+  const handleVetoProposal = async (groupId: string, proposalId: string, reason: string) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        const numericId = Number(proposalId.replace('prop-', '')) || 0;
+        await writeVetoPayout(numericId, reason);
+        createOnChainTx('flag_lock', 0, activeGroup.symbol, `Vetoed payout on-chain (24h pause): ID ${numericId}`);
+      } catch (err) {
+        console.error("On-chain vetoPayout failed:", err);
+      }
+      return;
+    }
+
     setGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
-
       const updatedProposals = g.proposals.map(p => {
         if (p.id !== proposalId) return p;
 
@@ -368,13 +439,11 @@ export default function App() {
           nextVetoers.push(currentUserAddress);
         }
 
-        // Establish veto expiry (24h from now, or extend existing by 24h)
         const baseTime = p.vetoExpiry && new Date(p.vetoExpiry).getTime() > Date.now()
           ? new Date(p.vetoExpiry).getTime()
           : Date.now();
         const nextVetoExpiry = new Date(baseTime + 24 * 60 * 60 * 1000).toISOString();
 
-        // Push the dispute deadline out as well
         let nextDisputeDeadline = p.disputeDeadline;
         if (!nextDisputeDeadline || new Date(nextDisputeDeadline).getTime() < new Date(nextVetoExpiry).getTime()) {
           nextDisputeDeadline = nextVetoExpiry;
@@ -401,10 +470,20 @@ export default function App() {
   };
 
   // Callback 6: Vote in active Dispute Governance
-  const handleVoteDispute = (groupId: string, proposalId: string, support: boolean) => {
+  const handleVoteDispute = async (groupId: string, proposalId: string, support: boolean) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        const numericId = Number(proposalId.replace('prop-', '')) || 0;
+        await writeVoteDispute(numericId, support);
+        createOnChainTx('dispute_vote', 0, activeGroup.symbol, `Voted on-chain ${support ? 'APPROVE' : 'DENY'} on dispute: ID ${numericId}`);
+      } catch (err) {
+        console.error("On-chain voteDispute failed:", err);
+      }
+      return;
+    }
+
     setGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
-
       const updatedProposals = g.proposals.map(p => {
         if (p.id !== proposalId) return p;
 
@@ -412,7 +491,7 @@ export default function App() {
         const currentReject = p.votesReject || [];
 
         if (currentApprove.includes(currentUserAddress) || currentReject.includes(currentUserAddress)) {
-          return p; // Already voted
+          return p;
         }
 
         const nextApprove = support ? [...currentApprove, currentUserAddress] : currentApprove;
@@ -436,18 +515,25 @@ export default function App() {
   };
 
   // Callback 7: Resolve Dispute Governance
-  const handleResolveDispute = (groupId: string, proposalId: string) => {
+  const handleResolveDispute = async (groupId: string, proposalId: string) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        const numericId = Number(proposalId.replace('prop-', '')) || 0;
+        await writeResolveDispute(numericId);
+        createOnChainTx('dispute_vote', 0, activeGroup.symbol, `Resolved dispute on-chain: ID ${numericId}`);
+      } catch (err) {
+        console.error("On-chain resolveDispute failed:", err);
+      }
+      return;
+    }
+
     setGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
-
       const updatedProposals = g.proposals.map(p => {
         if (p.id !== proposalId) return p;
 
         const approveCount = p.votesApprove?.length || 0;
         const rejectCount = p.votesReject?.length || 0;
-
-        // If approved by co-op votes, release back to Approved state (cleared of flags)
-        // If rejected, slash proposal and reduce creator's reputation score
         const resolvedApproved = approveCount >= rejectCount;
         
         return {
@@ -457,7 +543,6 @@ export default function App() {
         };
       });
 
-      // Update creator reputation score if rejected
       const propObj = g.proposals.find(p => p.id === proposalId);
       const isRejected = (propObj?.votesApprove?.length || 0) < (propObj?.votesReject?.length || 0);
       
@@ -482,8 +567,19 @@ export default function App() {
     }
   };
 
-  // Callback 8: Execute Approved Proposal (Withdraws funds to recipient)
-  const handleExecuteProposal = (groupId: string, proposalId: string) => {
+  // Callback 8: Execute Approved Proposal
+  const handleExecuteProposal = async (groupId: string, proposalId: string) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        const numericId = Number(proposalId.replace('prop-', '')) || 0;
+        await writeExecuteProposal(numericId);
+        createOnChainTx('contribute', 0, activeGroup.symbol, `Executed payout on-chain: ID ${numericId}`);
+      } catch (err) {
+        console.error("On-chain executeProposal failed:", err);
+      }
+      return;
+    }
+
     setGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
 
@@ -513,7 +609,17 @@ export default function App() {
   };
 
   // Callback 9: Toggle Yield APY
-  const handleToggleYield = (groupId: string, enabled: boolean) => {
+  const handleToggleYield = async (groupId: string, enabled: boolean) => {
+    if (isConnected && activeGroup?.contractAddress) {
+      try {
+        await writeToggleYield(enabled);
+        createOnChainTx('yield_toggle', 0, activeGroup.symbol, `Toggled yield wrapper on-chain to ${enabled ? 'ENABLED' : 'DISABLED'}`);
+      } catch (err) {
+        console.error("On-chain toggleYield failed:", err);
+      }
+      return;
+    }
+
     setGroups(prev => prev.map(g => {
       if (g.id !== groupId) return g;
       return {
@@ -956,18 +1062,13 @@ export default function App() {
             {/* Back to Website Button */}
             <button 
               onClick={() => setShowDashboard(false)}
-              className="bg-zinc-900 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 hover:bg-zinc-800 text-gray-200 transition active:scale-95 cursor-pointer"
+              className="bg-zinc-900 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 hover:bg-zinc-800 text-gray-200 transition active:scale-95 cursor-pointer mr-1"
             >
               <span>Exit Console</span>
             </button>
 
-            {/* Sign Out Button */}
-            <button 
-              onClick={handleSignOut}
-              className="bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-400 transition active:scale-95 cursor-pointer"
-            >
-              Disconnect
-            </button>
+            {/* RainbowKit Connect Button */}
+            <ConnectButton chainStatus="icon" showBalance={false} />
           </div>
         </header>
         {/* END: TopNavigation */}

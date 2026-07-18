@@ -50,6 +50,7 @@ export const INITIAL_GROUPS: SavingsGroup[] = [
     yieldEnabled: true,
     yieldProtocol: 'Aave Monad V1',
     yieldAccrued: 42.85,
+    contractAddress: '0x2915A9C0c5e796e6D1b8cC28Bb4F3b7F5cf5E796',
     members: [
       {
         address: '0x3ea7...8b1e',
@@ -149,6 +150,7 @@ export const INITIAL_GROUPS: SavingsGroup[] = [
     yieldEnabled: true,
     yieldProtocol: 'Compound v3',
     yieldAccrued: 112.5,
+    contractAddress: '0xea5f4c5e796e6d1b8cc28bb4f3b7f5cf5e796e6d',
     members: [
       {
         address: '0x3ea7...8b1e',
@@ -207,6 +209,7 @@ export const INITIAL_GROUPS: SavingsGroup[] = [
     yieldEnabled: false,
     yieldProtocol: 'Monad Earn',
     yieldAccrued: 0,
+    contractAddress: '0x8bb4f3b7f5cf5e796e6d1b8cc28bb4f3b7f5cf5e7',
     members: [
       {
         address: '0x9d2a...1a3f',

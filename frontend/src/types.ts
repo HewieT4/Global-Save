@@ -90,4 +90,5 @@ export interface SavingsGroup {
   createdAt: string;
   deadline: string;
   requiredSignatures: number;
+  contractAddress?: string;
 }
