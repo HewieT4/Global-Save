@@ -67,6 +67,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'pools' | 'contract' | 'history'>('pools');
   const [workspaceTab, setWorkspaceTab] = useState<'vault' | 'disputes' | 'ledger' | 'solidity'>('vault');
 
+  // Custom modals, search and toggle parameters
+  const [showContributeModal, setShowContributeModal] = useState<boolean>(false);
+  const [showProposalModal, setShowProposalModal] = useState<boolean>(false);
+  const [contributeAmount, setContributeAmount] = useState<string>('100');
+  const [proposalForm, setProposalForm] = useState({ title: '', desc: '', amount: '250', recipient: '0x3ea7...8b1e' });
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showPrivateKey, setShowPrivateKey] = useState<boolean>(false);
+
   const handleSignOut = () => {
     setCurrentUserAddress("");
   };
@@ -633,8 +641,82 @@ export default function App() {
     );
   }
 
+  // Draw canvas charts on dashboard load or group selection
+  useEffect(() => {
+    if (workspaceTab === 'vault' && showDashboard) {
+      const timer = setTimeout(() => {
+        // Draw sparklines
+        drawMockChart('eth-chart', '#007AFF', [0.8, 0.4, 0.7, 0.3, 0.6, 0.2]);
+        drawMockChart('bnb-chart', '#ffffff', [0.7, 0.6, 0.8, 0.5, 0.4, 0.1]);
+        drawMockChart('poly-chart', '#60a5fa', [0.2, 0.5, 0.3, 0.6, 0.4, 0.8]);
+        
+        drawMockChart('trend-chart', '#007AFF', [0.4, 0.5, 0.3, 0.6, 0.4, 0.5]);
+        drawMockChart('price-chart', '#60a5fa', [0.2, 0.4, 0.3, 0.6, 0.5, 0.8]);
+        drawMockChart('ratio-chart', '#007AFF', [0.8, 0.7, 0.75, 0.7, 0.8, 0.78]);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [workspaceTab, selectedGroupId, showDashboard, groups]);
+
+  const drawMockChart = (canvasId: string, color: string, points: number[]) => {
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    const w = rect.width;
+    const h = rect.height;
+    
+    ctx.clearRect(0, 0, w, h);
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(0, h * points[0]);
+    
+    points.forEach((p, i) => {
+      const x = (i / (points.length - 1)) * w;
+      const y = h * p;
+      ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, color + '22');
+    grad.addColorStop(1, color + '00');
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  };
+
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
+  if (!showDashboard) {
+    return (
+      <LandingPage
+        onLaunchApp={() => {
+          setShowDashboard(true);
+          if (!currentUserAddress) {
+            handleSignIn('0xUSER_VIRTUAL_WALLET');
+          }
+        }}
+      />
+    );
+  }
+
+  // Filtered proposals based on search
+  const activeProposals = activeGroup.proposals.filter(p => 
+    p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    p.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#0c0c0c] text-white flex flex-col font-sans selection:bg-gold-600 selection:text-black">
+    <div className="h-screen overflow-hidden flex bg-[#0d0d12] text-white font-sans relative selection:bg-[#007AFF] selection:text-white">
       {/* Global background video (fixed, behind everything) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <video 
@@ -642,291 +724,887 @@ export default function App() {
           loop 
           muted 
           playsInline
-          className="w-full h-full object-cover pointer-events-none opacity-20"
+          className="w-full h-full object-cover pointer-events-none opacity-[0.03]"
           src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4" 
         />
       </div>
 
-      {/* Global vertical guides */}
-      <div className="hidden md:block pointer-events-none fixed inset-y-0 left-1/2 -translate-x-[calc(50%+36rem)] w-px bg-white/5 z-[5]" />
-      <div className="hidden md:block pointer-events-none fixed inset-y-0 left-1/2 translate-x-[calc(-50%+36rem)] w-px bg-white/5 z-[5]" />
+      {/* Mobile Sidebar Overlay Backdrop */}
+      {sidebarOpen && (
+        <div 
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm"
+        />
+      )}
 
-      {/* Top Header */}
-      <header className="relative z-30 liquid-glass border-b border-white/5 py-4 px-6 sticky top-0 shadow-md backdrop-blur-md bg-black/40">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          
-          <div 
-            onClick={() => setShowDashboard(false)} 
-            className="flex items-center gap-3 cursor-pointer group"
-            title="Go to website landing page"
-          >
-            <div className="p-2.5 bg-gradient-to-br from-gold-600 to-gold-700 rounded-xl shadow-lg shadow-gold-600/10 text-black flex items-center justify-center border border-gold-600/30 group-hover:scale-105 transition-transform">
-              <Landmark className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-white font-display group-hover:text-gold-500 transition-colors">GlobalSave</h1>
-              <span className="px-2 py-0.5 bg-gold-600/10 border border-gold-600/20 rounded text-[9px] font-mono text-gold-500 font-medium">
-                MONAD TESTNET CONSOLE
-              </span>
-            </div>
+      {/* BEGIN: LeftSidebar */}
+      <aside 
+        className={`w-64 border-r border-gray-800 bg-[#0d0d12] flex flex-col p-6 space-y-8 fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 md:relative md:transform-none ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex items-center space-x-2 px-2">
+          <div className="w-8 h-8 bg-white rounded flex items-center justify-center shadow-lg shadow-white/5">
+            <span className="text-black font-extrabold font-display">G</span>
           </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-lg leading-none tracking-tight">GlobalSave®</span>
+            <span className="text-xs text-gray-500 font-mono">Cooperative Finance</span>
+          </div>
+        </div>
 
-          {/* User Address Bar */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="px-3.5 py-2 bg-white/5 border border-white/10 rounded-xl flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span className="text-[10px] font-mono text-slate-400 font-semibold uppercase tracking-wider">Monad Devnet</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-[10px] font-mono text-slate-300 font-bold tracking-tight select-all">
-                {currentUserAddress.slice(0, 10)}...{currentUserAddress.slice(-4)}
-              </span>
-              <div className="h-5 w-5 rounded-full bg-gold-600/10 border border-gold-600/20 flex items-center justify-center text-gold-500 text-[9px] font-mono font-bold">
-                {currentUserAddress === '0xUSER_VIRTUAL_WALLET' ? 'You' : 'CO'}
-              </div>
-            </div>
+        {/* Toggle Group */}
+        <div className="bg-zinc-900 p-1 rounded-xl flex border border-white/5 text-[11px] font-mono">
+          <button 
+            onClick={() => setActiveTab('pools')}
+            className={`flex-1 py-1.5 text-center font-medium rounded-lg transition-colors ${
+              activeTab === 'pools' ? 'bg-zinc-800 text-white font-bold' : 'text-gray-500 hover:text-white'
+            }`}
+          >
+            Active Pools
+          </button>
+          <button 
+            onClick={() => setActiveTab('contract')}
+            className={`flex-1 py-1.5 text-center font-medium rounded-lg transition-colors ${
+              activeTab === 'contract' ? 'bg-zinc-800 text-white font-bold' : 'text-gray-500 hover:text-white'
+            }`}
+          >
+            Yield Sweep
+          </button>
+        </div>
 
-            <button
-              id="btn-sign-out"
-              onClick={handleSignOut}
-              className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/30 rounded-xl text-xs font-sans font-semibold transition-all shadow-md cursor-pointer active:translate-y-px"
+        {/* Navigation Links */}
+        <nav className="space-y-1 flex-1 overflow-y-auto pr-2">
+          <div className="space-y-2">
+            <button 
+              onClick={() => {
+                setWorkspaceTab('vault');
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+                workspaceTab === 'vault' ? 'sidebar-active text-white' : 'text-gray-400 hover:text-white'
+              }`}
             >
-              Sign Out
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <span>Dashboard</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                setWorkspaceTab('disputes');
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+                workspaceTab === 'disputes' ? 'sidebar-active text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span>Governance Disputes</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                setWorkspaceTab('ledger');
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+                workspaceTab === 'ledger' ? 'sidebar-active text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Auditable Ledger</span>
+            </button>
+
+            <button 
+              onClick={() => {
+                setWorkspaceTab('solidity');
+                setSidebarOpen(false);
+              }}
+              className={`w-full flex items-center space-x-3 px-3 py-2 text-sm font-medium rounded-lg transition-all ${
+                workspaceTab === 'solidity' ? 'sidebar-active text-white' : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              <span>Solidity Contract API</span>
             </button>
           </div>
 
-        </div>
-      </header>
+          {/* Active Staking Section (Active Pools) */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between px-3 mb-4">
+              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider font-mono">Active Co-ops</span>
+              <span className="bg-gray-800 text-[10px] w-4 h-4 flex items-center justify-center rounded-full text-white font-mono">{groups.length}</span>
+            </div>
+            <div className="space-y-3 px-1">
+              {groups.map((g) => {
+                const isActive = g.id === selectedGroupId;
+                return (
+                  <button
+                    key={g.id}
+                    onClick={() => {
+                      setSelectedGroupId(g.id);
+                      setWorkspaceTab('vault');
+                      setSidebarOpen(false);
+                    }}
+                    className={`w-full text-left flex items-center space-x-3 p-2 rounded-xl transition-all border ${
+                      isActive 
+                        ? 'bg-zinc-900 border-[#007AFF]/30' 
+                        : 'border-transparent hover:bg-zinc-900/50'
+                    }`}
+                  >
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold font-mono shadow-md ${
+                      g.symbol === 'USDC' ? 'bg-[#007AFF] text-white' : g.symbol === 'MONAD' ? 'bg-white text-[#007AFF]' : 'bg-emerald-500 text-white'
+                    }`}>
+                      {g.symbol.slice(0, 1)}
+                    </div>
+                    <div className="text-[11px] truncate flex-1">
+                      <div className={`font-semibold ${isActive ? 'text-[#007AFF]' : 'text-gray-300'}`}>{g.name}</div>
+                      <div className="font-mono text-gray-500 mt-0.5">${g.totalSaved.toLocaleString()}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </nav>
 
-      {/* Main Content Body */}
-      <main className="relative z-20 flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+        {/* Bottom Action */}
+        <div className="bg-zinc-900 p-4 rounded-xl border border-white/5 space-y-1">
+          <div className="flex items-center space-x-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs font-semibold text-white">Monad Consensus</span>
+          </div>
+          <p className="text-[10px] text-gray-500 font-mono">Finality: ~0.9s | gasLimit: 30M</p>
+        </div>
+      </aside>
+      {/* END: LeftSidebar */}
+
+      {/* Main Content Wrapper */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative z-20 bg-black/10 backdrop-blur-sm">
         
-        {/* Row 1: High-Level Analytics Indicators */}
-        <section id="onchain-stats-dashboard" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          
-          <div className="liquid-glass border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden bg-black/30 shadow-xl">
-            <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Total Pool Savings</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-mono font-bold text-white">${totalSavedAcrossPools.toLocaleString()}</span>
-                <span className="text-[10px] text-slate-500 font-mono">USDC / T</span>
-              </div>
-            </div>
-            <div className="p-3 bg-gold-600/10 text-gold-500 rounded-xl border border-gold-600/10">
-              <Landmark className="h-5 w-5" />
-            </div>
-          </div>
+        {/* BEGIN: TopNavigation */}
+        <header className="h-16 border-b border-gray-800 flex items-center justify-between px-6 md:px-8 bg-[#0d0d12]/90 backdrop-blur-xl">
+          <div className="flex items-center space-x-4">
+            {/* Hamburger Toggle */}
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 text-gray-400 hover:text-white md:hidden border border-gray-800 rounded-lg cursor-pointer"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
-          <div className="liquid-glass border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden bg-black/30 shadow-xl">
-            <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Your Contributions</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-mono font-bold text-gold-500">${userTotalContributions.toLocaleString()}</span>
-                <span className="text-[10px] text-slate-500 font-mono">USDC / T</span>
+            {/* Profile Info */}
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden border border-white/10 shadow-md">
+                <img 
+                  alt="Sophia Chen" 
+                  className="w-full h-full object-cover" 
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCb8CDju082NzkH2KdHfBJTcfryDCCnNPPtXXHyl4K04HCXZpKpVO9WivsIxP7ogaBF5twcgGBM6zcxlcKKx4YLNLScL4FY2o5y4tMlu8cAg8GYod6ZP-RcBDOu1KG_wKWS1wXa1gPhKmqPHTc-o6_DMD08PF5TtzVODMZgQPIB79pSTbENNAFx-9rLlz3XqKUm59GmmYpcsjxpxryfAsjtC3fS4AHq1hQU6Vb3kMWGcMYtz8nh5ihJiiMaLWAJ1wU4TWw23blqxTF5"
+                />
               </div>
-            </div>
-            <div className="p-3 bg-gold-600/10 text-gold-500 rounded-xl border border-gold-600/10">
-              <Coins className="h-5 w-5" />
-            </div>
-          </div>
-
-          <div className="liquid-glass border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden bg-black/30 shadow-xl">
-            <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">DeFi Accrued APY</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-xl font-mono font-bold text-emerald-400">+${totalYieldCompounded.toFixed(2)}</span>
-                <span className="text-[10px] text-emerald-600 font-mono">ACCRUED</span>
-              </div>
-            </div>
-            <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/10">
-              <BadgePercent className="h-5 w-5 animate-pulse" />
-            </div>
-          </div>
-
-          <div className="liquid-glass border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden bg-black/30 shadow-xl">
-            <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Security Locks</span>
-              <div className="flex items-baseline gap-1">
-                <span className={`text-xl font-mono font-bold ${activeDisputesCount > 0 ? 'text-rose-400 animate-pulse' : 'text-slate-400'}`}>
-                  {activeDisputesCount} Active Locks
+              <div className="flex flex-col">
+                <span className="text-[10px] text-gray-500 font-mono">
+                  {currentUserAddress === '0xUSER_VIRTUAL_WALLET' ? '@sophia997' : `@${currentUserAddress.slice(0,6)}`}
+                  <span className="bg-zinc-800 text-[#007AFF] text-[9px] px-1 rounded ml-1.5 font-bold">100 REP</span>
                 </span>
+                <span className="text-xs font-bold text-white">Sophia Chen</span>
               </div>
             </div>
-            <div className={`p-3 rounded-xl border ${activeDisputesCount > 0 ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'liquid-glass text-slate-500 border-white/5'}`}>
-              <ShieldAlert className="h-5 w-5" />
-            </div>
+
+            {/* Deposit Faucet Trigger */}
+            <button 
+              onClick={() => handleFaucetClaim('MONAD', 10)}
+              className="bg-[#007AFF] hover:bg-blue-600 px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center space-x-1.5 transition text-white active:scale-95 shadow-md shadow-blue-500/10 cursor-pointer"
+              title="Claim 10 MONAD from developer faucet"
+            >
+              <span>Faucet Claim</span>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
           </div>
 
-        </section>
+          <div className="flex items-center space-x-3">
+            {/* Search Input */}
+            <div className="relative hidden sm:block">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-3.5 w-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-zinc-900 border border-gray-800 text-white rounded-lg py-1.5 pl-9 pr-3 text-xs w-40 focus:ring-1 focus:ring-[#007AFF] focus:border-[#007AFF] outline-none" 
+                placeholder="Search proposals..." 
+                type="text"
+              />
+            </div>
 
-        {/* Row 2: Cooperative Workspace - Wallet + Group details */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Back to Website Button */}
+            <button 
+              onClick={() => setShowDashboard(false)}
+              className="bg-zinc-900 border border-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 hover:bg-zinc-800 text-gray-200 transition active:scale-95 cursor-pointer"
+            >
+              <span>Exit Console</span>
+            </button>
+
+            {/* Sign Out Button */}
+            <button 
+              onClick={handleSignOut}
+              className="bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/25 px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-400 transition active:scale-95 cursor-pointer"
+            >
+              Disconnect
+            </button>
+          </div>
+        </header>
+        {/* END: TopNavigation */}
+
+        {/* Core Main Viewport */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
           
-          {/* Left Panel: Wallet Console & Savings Pools Selection (col-span-4) */}
-          <div className="lg:col-span-4 space-y-6">
-            <WalletConsole 
-              wallet={wallet} 
-              onFaucetClaim={handleFaucetClaim} 
-              transactions={transactions} 
-            />
+          {workspaceTab === 'vault' && (
+            <div className="space-y-8 animate-fade-in">
+              {/* BEGIN: HeroSection */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Top Staking Assets */}
+                <div className="lg:col-span-8 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <h2 className="text-xl font-extrabold tracking-tight">Active Savings Pools</h2>
+                      <div className="bg-zinc-900 px-2.5 py-0.5 rounded-full text-[9px] text-gray-400 flex items-center space-x-1 border border-white/5 font-mono">
+                        <svg className="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3" />
+                        </svg>
+                        <span>{groups.length} Pools Active</span>
+                      </div>
+                    </div>
+                  </div>
 
-            {/* Select Savings Pool card list */}
-            <div className="liquid-glass border border-white/5 rounded-2xl p-5 shadow-2xl space-y-4 bg-black/30">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-2 font-display">
-                  <Layers className="h-4 w-4 text-gold-500" />
-                  Select Savings Pool
-                </h2>
-                <span className="text-[10px] font-mono text-slate-500 font-semibold">{groups.length} Pools</span>
-              </div>
+                  {/* Assets Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {groups.map((g) => {
+                      const isActive = g.id === selectedGroupId;
+                      const progressColor = g.symbol === 'USDC' ? '#007AFF' : g.symbol === 'MONAD' ? '#ffffff' : '#10b981';
+                      const chartId = `${g.id.replace('group-', '')}-chart`;
+                      
+                      return (
+                        <div 
+                          key={g.id}
+                          onClick={() => setSelectedGroupId(g.id)}
+                          className={`p-5 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col relative overflow-hidden ${
+                            isActive 
+                              ? 'bg-zinc-900/90 border-[#007AFF]/60 shadow-lg shadow-[#007AFF]/5 scale-[1.01]' 
+                              : 'bg-zinc-900/40 border-gray-800 hover:border-gray-700 hover:bg-zinc-900/60'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shadow ${
+                                g.symbol === 'USDC' ? 'bg-[#007AFF] text-white' : g.symbol === 'MONAD' ? 'bg-white text-[#007AFF]' : 'bg-emerald-500 text-white'
+                              }`}>
+                                {g.symbol.slice(0, 1)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-[9px] text-gray-500 font-mono uppercase tracking-wider">{g.category}</div>
+                                <div className="text-xs font-bold text-white truncate max-w-[100px]">{g.name}</div>
+                              </div>
+                            </div>
+                            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 17L17 7M17 7H7M17 7V17" />
+                            </svg>
+                          </div>
 
-              <div id="savings-groups-list" className="flex flex-col gap-3">
-                {groups.map((g) => {
-                  const progress = Math.min(100, Math.round((g.totalSaved / g.targetAmount) * 100));
-                  const isActive = g.id === selectedGroupId;
+                          <div className="mb-2">
+                            <div className="text-[9px] text-gray-500 font-mono uppercase">APY Reward</div>
+                            <div className="text-lg font-bold font-mono text-white">
+                              {g.id === 'group-nomadnest' ? '4.80%' : g.id === 'group-communi' ? '6.20%' : '3.50%'}
+                            </div>
+                            <div className="text-[9px] text-emerald-400 font-mono flex items-center mt-0.5">
+                              <svg className="w-2.5 h-2.5 mr-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
+                              </svg> 
+                              DeFi Compound
+                            </div>
+                          </div>
 
-                  return (
+                          {/* Sparkline canvas graph */}
+                          <div className="mt-auto pt-3 relative">
+                            <div className="absolute right-0 top-0 text-[10px] text-gray-400 font-mono font-bold">
+                              ${g.totalSaved.toLocaleString()}
+                            </div>
+                            <canvas className="w-full h-10 mt-1" id={chartId}></canvas>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Virtual Wallet Emulator Card */}
+                <div className="lg:col-span-4 gradient-blue rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between border border-white/10 shadow-xl min-h-[260px]">
+                  <div className="flex items-center justify-between z-10">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
+                        <span className="text-[10px] font-bold text-[#007AFF]">G</span>
+                      </div>
+                      <span className="text-xs font-extrabold text-white tracking-tight uppercase">Wallet Console</span>
+                    </div>
+                    <span className="bg-black/30 text-[9px] font-mono px-2 py-0.5 rounded-full text-white border border-white/5">
+                      Monad Client
+                    </span>
+                  </div>
+
+                  <div className="z-10 mt-4 space-y-3 font-mono text-[10px]">
+                    <div>
+                      <span className="text-white/50 block text-[9px] uppercase">Public Key:</span>
+                      <span className="text-white font-bold select-all tracking-tight break-all">
+                        {wallet.address}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-white/50 block text-[9px] uppercase">Private Key:</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-white font-semibold tracking-tighter truncate max-w-[160px]">
+                          {showPrivateKey ? wallet.privateKey : '••••••••••••••••••••••••••••••••••••••••'}
+                        </span>
+                        <button 
+                          onClick={() => setShowPrivateKey(!showPrivateKey)}
+                          className="px-1.5 py-0.5 bg-black/30 border border-white/10 rounded hover:bg-black/50 text-white cursor-pointer active:scale-95"
+                        >
+                          {showPrivateKey ? 'Hide' : 'Show'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex gap-4 pt-1.5 border-t border-white/10">
+                      <div>
+                        <span className="text-white/50 block text-[9px] uppercase">MONAD:</span>
+                        <span className="font-bold text-white">{wallet.balances.MONAD.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-white/50 block text-[9px] uppercase">USDC:</span>
+                        <span className="font-bold text-white">${wallet.balances.USDC.toLocaleString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-white/50 block text-[9px] uppercase">USDT:</span>
+                        <span className="font-bold text-white">${wallet.balances.USDT.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-4 z-10">
                     <button 
-                      key={g.id}
-                      onClick={() => setSelectedGroupId(g.id)}
-                      className={`w-full text-left p-4 rounded-xl border cursor-pointer transition-all duration-300 relative overflow-hidden flex flex-col gap-2 ${
-                        isActive 
-                          ? 'bg-black/50 border-gold-600/60 shadow-gold-600/5 shadow-md scale-[1.01]' 
-                          : 'bg-black/10 border-white/5 hover:border-white/10 hover:bg-black/30'
-                      }`}
+                      onClick={() => handleFaucetClaim('USDC', 100)}
+                      className="bg-white text-[#007AFF] font-bold py-2 rounded-xl text-[10px] flex items-center justify-center space-x-1 shadow-lg hover:bg-gray-100 transition cursor-pointer"
                     >
-                      {/* Ambient Glow on Active Card */}
-                      {isActive && (
-                        <div className="absolute right-0 top-0 w-24 h-24 bg-gold-600/5 rounded-full blur-2xl pointer-events-none" />
-                      )}
-
-                      <div className="flex items-center justify-between gap-2 w-full">
-                        <span className="px-2 py-0.5 bg-black/30 rounded-md text-[9px] font-mono font-semibold text-slate-300 border border-white/5">
-                          {g.category}
-                        </span>
-                        <span className="text-[10px] font-mono text-gold-500 font-medium">
-                          Multi-Sig {g.requiredSignatures}/{g.members.length} Sigs
-                        </span>
-                      </div>
-
-                      <div className="w-full">
-                        <h3 className="text-sm font-display font-semibold text-white block truncate">{g.name}</h3>
-                        <p className="text-[11px] text-slate-400 font-sans line-clamp-1 mt-0.5">{g.description}</p>
-                      </div>
-
-                      <div className="flex items-baseline gap-1 mt-1 w-full">
-                        <span className="text-base font-mono font-bold text-white">{g.totalSaved.toLocaleString()}</span>
-                        <span className="text-[9px] font-mono text-slate-500">{g.symbol}</span>
-                        <span className="text-[9px] font-mono text-slate-500 block ml-auto">Goal: {g.targetAmount.toLocaleString()}</span>
-                      </div>
-
-                      {/* Progress tracker bar */}
-                      <div className="space-y-1 w-full">
-                        <div className="w-full bg-black/40 h-1 rounded-full overflow-hidden">
-                          <div className="bg-gold-600 h-full rounded-full" style={{ width: `${progress}%` }} />
-                        </div>
-                        <div className="flex justify-between text-[8px] font-mono text-slate-500">
-                          <span>{progress}% complete</span>
-                          {g.yieldEnabled && (
-                            <span className="text-emerald-400 flex items-center gap-0.5 font-sans">
-                              <Activity className="h-2.5 w-2.5 animate-pulse" /> DeFi Active
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      <span>Claim USDC Faucet</span>
                     </button>
-                  );
-                })}
+                    <button 
+                      onClick={() => handleFaucetClaim('USDT', 100)}
+                      className="bg-black/20 hover:bg-black/30 transition text-white font-bold py-2 rounded-xl text-[10px] flex items-center justify-center space-x-1 border border-white/10 cursor-pointer"
+                    >
+                      <span>Claim USDT Faucet</span>
+                    </button>
+                  </div>
+
+                  {/* Abstract background blur elements */}
+                  <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                  <div className="absolute -left-10 top-0 w-24 h-24 bg-blue-400/20 rounded-full blur-2xl pointer-events-none"></div>
+                </div>
+              </div>
+              {/* END: HeroSection */}
+
+              {/* BEGIN: ActiveStakingDetail */}
+              <div className="bg-zinc-900/90 rounded-3xl border border-gray-800 p-6 md:p-8 space-y-6 md:space-y-8 relative overflow-hidden backdrop-blur-xl">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-gray-500 font-medium uppercase font-mono tracking-wider">Active Workspace</div>
+                    <div className="flex flex-wrap items-center gap-3 mt-2">
+                      <h2 className="text-2xl font-black tracking-tight">{activeGroup.name} Pool</h2>
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shadow ${
+                        activeGroup.symbol === 'USDC' ? 'bg-[#007AFF] text-white' : activeGroup.symbol === 'MONAD' ? 'bg-white text-[#007AFF]' : 'bg-emerald-500 text-white'
+                      }`}>
+                        {activeGroup.symbol.slice(0, 1)}
+                      </div>
+                      <div className="flex space-x-1.5">
+                        <span className="px-2 py-0.5 bg-black/40 border border-white/5 rounded text-[9px] font-mono text-gray-400">
+                          Finality Shield Active
+                        </span>
+                        <span className="px-2 py-0.5 bg-[#007AFF]/15 border border-[#007AFF]/25 rounded text-[9px] font-mono text-blue-400 font-bold">
+                          Multi-Sig {activeGroup.requiredSignatures}-of-{activeGroup.members.length} Sigs
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top Action Tabs indicator */}
+                  <div className="flex space-x-1.5">
+                    <button 
+                      onClick={() => handleFaucetClaim('MONAD', 10)}
+                      className="p-1.5 bg-gray-800 text-gray-400 hover:text-white rounded-lg transition hover:bg-gray-700 cursor-pointer"
+                      title="Faucet Claim MONAD"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                    </button>
+                    <button 
+                      onClick={() => {
+                        createOnChainTx('dispute_vote', 0, activeGroup.symbol, 'Consensus health ping dispatched on Monad Devnet');
+                        alert("Consensus audit triggered! check ledger logs tab.");
+                      }}
+                      className="p-1.5 bg-gray-800 text-gray-400 hover:text-white rounded-lg transition hover:bg-gray-700 cursor-pointer"
+                      title="Trigger Consensus Audit"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                  {/* Balance Display */}
+                  <div className="lg:col-span-4 space-y-4">
+                    <div>
+                      <div className="text-[10px] text-gray-500 font-semibold uppercase tracking-wider mb-1 font-mono">
+                        Active Pool Balance ({activeGroup.symbol})
+                      </div>
+                      <div className="text-4xl font-extrabold tracking-tight font-mono text-white flex items-baseline gap-1">
+                        ${activeGroup.totalSaved.toLocaleString()}
+                        <span className="text-xs text-gray-500 font-medium">{activeGroup.symbol}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex space-x-3">
+                      <button 
+                        onClick={() => setShowContributeModal(true)}
+                        className="px-5 py-2.5 bg-[#007AFF] hover:bg-blue-600 rounded-xl text-xs font-bold hover:scale-[1.01] transition shadow-lg shadow-blue-500/20 text-white cursor-pointer active:scale-95"
+                      >
+                        Contribute
+                      </button>
+                      <button 
+                        onClick={() => setShowProposalModal(true)}
+                        className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 rounded-xl text-xs font-bold hover:scale-[1.01] transition text-gray-200 border border-white/5 cursor-pointer active:scale-95"
+                      >
+                        Propose Payout
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Goal Slider / Contribution target */}
+                  <div className="lg:col-span-8 flex flex-col justify-center border-t lg:border-t-0 lg:border-l border-gray-800 pt-6 lg:pt-0 lg:pl-8 min-h-[80px]">
+                    <div className="flex justify-between items-end mb-3">
+                      <div className="space-y-0.5">
+                        <div className="text-xs font-extrabold text-white">Savings Pool Target</div>
+                        <div className="text-[9px] text-gray-500 font-mono">Vault Ingestion Compound Progress</div>
+                      </div>
+                      <div className="flex space-x-1.5 font-mono text-[9px]">
+                        <span className="bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded border border-blue-500/10">
+                          Saved: ${activeGroup.totalSaved.toLocaleString()}
+                        </span>
+                        <span className="bg-zinc-800 text-gray-400 px-2 py-0.5 rounded border border-white/5">
+                          Goal: ${activeGroup.targetAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Progress Slider Mockup */}
+                    <div className="relative h-6 flex items-center">
+                      <div className="absolute w-full h-1 bg-gray-800 rounded-full"></div>
+                      <div 
+                        className="absolute h-1 bg-[#007AFF] rounded-full"
+                        style={{ width: `${Math.min(100, Math.round((activeGroup.totalSaved / activeGroup.targetAmount) * 100))}%` }}
+                      ></div>
+                      <div 
+                        className="absolute w-4 h-4 bg-white rounded-full flex items-center justify-center border-4 border-blue-900 shadow-xl pointer-events-none transition-all"
+                        style={{ left: `calc(${Math.min(100, Math.round((activeGroup.totalSaved / activeGroup.targetAmount) * 100))}% - 8px)` }}
+                      >
+                        <div className="w-1 h-2 flex space-x-0.5">
+                          <div className="w-0.5 h-full bg-blue-900"></div>
+                          <div className="w-0.5 h-full bg-blue-900"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detail Metrics */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-t border-gray-800 pt-6">
+                  <div className="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-white/5">
+                    <div className="text-[9px] text-gray-500 font-semibold leading-tight font-mono">
+                      YIELD HARVEST<br/>
+                      <span className="text-[8px] font-normal text-emerald-400">Sweeps compound active</span>
+                    </div>
+                    <BadgePercent className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  </div>
+
+                  <div className="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-white/5">
+                    <div className="text-[9px] text-gray-500 font-semibold leading-tight font-mono">
+                      CONSENSUS STATE<br/>
+                      <span className="text-[8px] font-normal text-blue-400">Multi-sig validation</span>
+                    </div>
+                    <Users className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                  </div>
+
+                  <div className="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-white/5">
+                    <div className="text-[9px] text-gray-500 font-semibold leading-tight font-mono">
+                      SAFETY DELAY<br/>
+                      <span className="text-[8px] font-normal text-orange-400">24h Veto Lock active</span>
+                    </div>
+                    <ShieldAlert className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                  </div>
+
+                  <div className="flex justify-between items-center bg-zinc-950 p-3 rounded-xl border border-white/5">
+                    <div className="text-[9px] text-gray-500 font-semibold leading-tight font-mono">
+                      ACCUMULATED APY<br/>
+                      <span className="text-[8px] font-normal text-gray-400 font-mono">+${activeGroup.yieldAccrued.toFixed(2)} USD</span>
+                    </div>
+                    <Activity className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  </div>
+                </div>
+
+                {/* Bottom Interactive Workspace Sub-Grid (Replacing Static Charts) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
+                  
+                  {/* Card 1: Active Proposals */}
+                  <div className="bg-zinc-950/80 p-4 rounded-2xl border border-gray-800 flex flex-col justify-between min-h-[220px]">
+                    <div className="flex justify-between mb-3 items-center border-b border-white/5 pb-2">
+                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider font-mono">Active Proposals</span>
+                      <span className="text-[8px] bg-[#007AFF]/15 text-[#007AFF] px-1.5 py-0.5 rounded font-mono font-bold">
+                        {activeProposals.filter(p => p.status === 'pending_signatures' || p.status === 'approved').length} Active
+                      </span>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto space-y-2.5 max-h-[140px] pr-1">
+                      {activeProposals.length === 0 ? (
+                        <div className="text-center text-[10px] text-gray-500 py-6 italic">No pending proposals. Click "Propose Payout" to create one.</div>
+                      ) : (
+                        activeProposals.map((prop) => {
+                          const hasSigned = prop.currentSignatures.includes(currentUserAddress);
+                          const isApproved = prop.status === 'approved';
+                          return (
+                            <div key={prop.id} className="p-2.5 rounded-lg bg-zinc-900 border border-white/5 space-y-1.5 text-[10px]">
+                              <div className="flex justify-between items-start font-bold">
+                                <span className="text-white truncate max-w-[100px]">{prop.title}</span>
+                                <span className="text-[#007AFF] font-mono">${prop.amount} {prop.symbol}</span>
+                              </div>
+                              <p className="text-gray-400 text-[9px] line-clamp-1 leading-normal">{prop.description}</p>
+                              
+                              <div className="flex items-center justify-between gap-1 pt-1.5 border-t border-white/5 text-[9px]">
+                                <span className="text-gray-500 font-mono">Sigs: {prop.currentSignatures.length}/{prop.requiredSignatures}</span>
+                                <div className="flex gap-1">
+                                  {prop.status === 'pending_signatures' && !hasSigned && (
+                                    <button 
+                                      onClick={() => handleSignProposal(activeGroup.id, prop.id)}
+                                      className="px-2 py-0.5 bg-[#007AFF] hover:bg-blue-600 rounded text-black text-[9px] font-extrabold cursor-pointer"
+                                    >
+                                      Sign
+                                    </button>
+                                  )}
+                                  {prop.status === 'pending_signatures' && hasSigned && (
+                                    <span className="text-gray-500 text-[8px] italic">Signed</span>
+                                  )}
+                                  {isApproved && (
+                                    <button 
+                                      onClick={() => handleExecuteProposal(activeGroup.id, prop.id)}
+                                      className="px-2 py-0.5 bg-green-500 hover:bg-green-600 rounded text-black text-[9px] font-extrabold cursor-pointer"
+                                    >
+                                      Execute
+                                    </button>
+                                  )}
+                                  <button 
+                                    onClick={() => handleVetoProposal(activeGroup.id, prop.id, "Suspicious activity flagged by co-signer")}
+                                    className="px-2 py-0.5 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border border-orange-500/20 rounded text-[9px] cursor-pointer"
+                                  >
+                                    Veto
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card 2: Dispute Center */}
+                  <div className="bg-zinc-950/80 p-4 rounded-2xl border border-gray-800 flex flex-col justify-between min-h-[220px]">
+                    <div className="flex justify-between mb-3 items-center border-b border-white/5 pb-2">
+                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider font-mono">Dispute Vetoes</span>
+                      <span className="text-[8px] bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded font-mono font-bold">Arbitration</span>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto space-y-2.5 max-h-[140px] pr-1">
+                      {activeGroup.proposals.filter(p => p.status === 'flagged_locked' || p.status === 'vetoed_paused').length === 0 ? (
+                        <div className="text-center text-[10px] text-gray-500 py-6 italic">No disputes or paused vetos inside this pool.</div>
+                      ) : (
+                        activeGroup.proposals.filter(p => p.status === 'flagged_locked' || p.status === 'vetoed_paused').map((prop) => {
+                          const votesApprove = prop.votesApprove?.length || 0;
+                          const votesReject = prop.votesReject?.length || 0;
+                          return (
+                            <div key={prop.id} className="p-2.5 rounded-lg bg-zinc-900 border border-white/5 space-y-1.5 text-[10px]">
+                              <div className="flex justify-between items-start font-bold">
+                                <span className="text-rose-400 truncate max-w-[100px]">{prop.title}</span>
+                                <span className="text-rose-400 font-mono">${prop.amount} {prop.symbol}</span>
+                              </div>
+                              <p className="text-gray-400 text-[9px] line-clamp-1">{prop.vetoReason || prop.flagReason || 'Veto delay active'}</p>
+                              
+                              <div className="flex items-center justify-between gap-1 pt-1 border-t border-white/5 text-[9px]">
+                                <span className="text-gray-500 font-mono">Approve:{votesApprove} | Slashing:{votesReject}</span>
+                                <div className="flex gap-1">
+                                  <button 
+                                    onClick={() => handleVoteDispute(activeGroup.id, prop.id, false)}
+                                    className="px-1.5 py-0.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/20 rounded cursor-pointer text-[8px]"
+                                  >
+                                    Slash
+                                  </button>
+                                  <button 
+                                    onClick={() => handleResolveDispute(activeGroup.id, prop.id)}
+                                    className="px-1.5 py-0.5 bg-zinc-700 hover:bg-zinc-600 rounded text-white text-[8px]"
+                                  >
+                                    Resolve
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card 3: Recent Activity Event Feed */}
+                  <div className="bg-zinc-950/80 p-4 rounded-2xl border border-gray-800 flex flex-col justify-between min-h-[220px]">
+                    <div className="flex justify-between mb-3 items-center border-b border-white/5 pb-2">
+                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider font-mono">Vault Ledger Events</span>
+                      <span className="text-[8px] text-gray-500 font-mono">Live</span>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto space-y-1.5 max-h-[140px] pr-1 font-mono text-[9px] text-green-400/85">
+                      {transactions.filter(t => t.description.includes(activeGroup.name) || t.symbol === activeGroup.symbol).slice(-4).map((tx) => (
+                        <div key={tx.id} className="leading-snug flex items-start gap-1">
+                          <span className="text-gray-500 shrink-0">&gt;</span>
+                          <span className="break-all">{tx.description}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card 4: Solidity Smart Contract API */}
+                  <div className="bg-zinc-950/80 p-4 rounded-2xl border border-gray-800 flex flex-col justify-between min-h-[220px]">
+                    <div className="flex justify-between mb-2 items-center border-b border-white/5 pb-2">
+                      <span className="text-[9px] text-gray-400 font-bold uppercase tracking-wider font-mono">Contract Parameters</span>
+                    </div>
+                    
+                    <div className="flex-1 space-y-2 text-[9px] font-mono text-white/60">
+                      <div className="flex justify-between">
+                        <span>governanceAddress:</span>
+                        <span className="text-[#007AFF] text-[8px] truncate max-w-[80px]">0xGSg1...73c2</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>vetoWindowLimit:</span>
+                        <span className="text-white">86,400 sec</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>yieldSweepEnabled:</span>
+                        <span className="text-emerald-400">TRUE</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>consensusProtocol:</span>
+                        <span className="text-white">MonadBFT v2</span>
+                      </div>
+                      <button 
+                        onClick={() => {
+                          setWorkspaceTab('solidity');
+                          triggerNotification('Opened contract Solidity viewer.');
+                        }}
+                        className="w-full mt-3 py-1.5 bg-[#007AFF]/10 border border-[#007AFF]/25 text-[#007AFF] rounded font-bold text-center hover:bg-[#007AFF]/20 transition-all cursor-pointer text-[9px]"
+                      >
+                        Solidity Code Inspector
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+              {/* END: ActiveStakingDetail */}
+            </div>
+          )}
+
+          {workspaceTab === 'disputes' && (
+            <div className="animate-fade-in bg-zinc-900/90 rounded-3xl border border-gray-800 p-6 md:p-8 space-y-6 relative overflow-hidden backdrop-blur-xl">
+              <h2 className="text-2xl font-black tracking-tight text-white mb-2">Governance Dispute Resolution Center</h2>
+              <p className="text-xs text-gray-400 max-w-2xl leading-relaxed">
+                If a proposal violates cooperative guidelines, signatories can veto or freeze the funds permanently, creating a community dispute. If a proposal is rejected during dispute arbitration, the proposer's reputation points are slashed.
+              </p>
+              <DisputeCenter
+                groups={groups}
+                wallet={wallet}
+                onVoteDispute={handleVoteDispute}
+                onResolveDispute={handleResolveDispute}
+                currentUserAddress={currentUserAddress}
+              />
+            </div>
+          )}
+
+          {workspaceTab === 'ledger' && (
+            <div className="animate-fade-in bg-zinc-900/90 rounded-3xl border border-gray-800 p-6 md:p-8 space-y-6 relative overflow-hidden backdrop-blur-xl">
+              <h2 className="text-2xl font-black tracking-tight text-white mb-2">Auditable Transaction Ledger</h2>
+              <p className="text-xs text-gray-400 max-w-2xl leading-relaxed">
+                A cryptographically secure logs feed settling transactions in Monad Testnet blocks. Download transactions list or verify transaction hashes on the ledger inspector.
+              </p>
+              <TransactionHistory transactions={transactions} />
+            </div>
+          )}
+
+          {workspaceTab === 'solidity' && (
+            <div className="animate-fade-in bg-zinc-900/90 rounded-3xl border border-gray-800 p-6 md:p-8 space-y-6 relative overflow-hidden backdrop-blur-xl">
+              <h2 className="text-2xl font-black tracking-tight text-white mb-2">Solidity smart contract API Inspector</h2>
+              <p className="text-xs text-gray-400 max-w-2xl leading-relaxed">
+                Read or write variables directly to the smart contract source deployed at `0xGlobalSaveContractAddress` on Monad Testnet.
+              </p>
+              <ContractViewer />
+            </div>
+          )}
+
+        </main>
+      </div>
+
+      {/* Contribute Overlay Modal */}
+      {showContributeModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-zinc-950 border border-gray-800 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl relative">
+            <h3 className="text-lg font-bold tracking-tight">Contribute Stablecoins</h3>
+            <p className="text-xs text-gray-400">Add assets to the **{activeGroup.name}** savings pool to earn DeFi interest.</p>
+            
+            <div className="space-y-2">
+              <label className="text-[10px] text-gray-500 uppercase font-mono block">Amount to deposit ({activeGroup.symbol}):</label>
+              <input 
+                type="number" 
+                value={contributeAmount}
+                onChange={(e) => setContributeAmount(e.target.value)}
+                className="w-full bg-zinc-900 border border-gray-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#007AFF] text-white font-mono"
+              />
+            </div>
+            
+            <div className="flex space-x-3 pt-2">
+              <button 
+                onClick={() => setShowContributeModal(false)}
+                className="flex-1 py-2 bg-gray-800 text-xs font-semibold rounded-xl text-gray-300 border border-white/5 cursor-pointer hover:bg-gray-750"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  handleContribute(activeGroup.id, Number(contributeAmount));
+                  setShowContributeModal(false);
+                  triggerNotification(`Successfully deposited ${contributeAmount} ${activeGroup.symbol} to ${activeGroup.name}!`);
+                }}
+                className="flex-1 py-2 bg-[#007AFF] text-xs font-bold rounded-xl text-white shadow shadow-blue-500/20 cursor-pointer hover:bg-blue-600"
+              >
+                Deposit Assets
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Propose Payout Overlay Modal */}
+      {showProposalModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+          <div className="bg-zinc-950 border border-gray-800 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl relative">
+            <h3 className="text-lg font-bold tracking-tight">Create Shared Expense Proposal</h3>
+            <p className="text-xs text-gray-400 font-sans">Propose a payout from the **{activeGroup.name}** cooperative vault. Requires approval signatures.</p>
+            
+            <div className="space-y-3 text-xs">
+              <div className="space-y-1">
+                <label className="text-[9px] text-gray-500 uppercase font-mono block">Proposal Title:</label>
+                <input 
+                  type="text" 
+                  value={proposalForm.title}
+                  placeholder="e.g. Workspace Rental Payment"
+                  onChange={(e) => setProposalForm({...proposalForm, title: e.target.value})}
+                  className="w-full bg-zinc-900 border border-gray-800 rounded-xl px-3 py-2 focus:outline-none focus:border-[#007AFF] text-white"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] text-gray-500 uppercase font-mono block">Description:</label>
+                <textarea 
+                  value={proposalForm.desc}
+                  rows={2}
+                  placeholder="Explain why this expense should be settled..."
+                  onChange={(e) => setProposalForm({...proposalForm, desc: e.target.value})}
+                  className="w-full bg-zinc-900 border border-gray-800 rounded-xl px-3 py-2 focus:outline-none focus:border-[#007AFF] text-white resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[9px] text-gray-500 uppercase font-mono block">Amount ({activeGroup.symbol}):</label>
+                  <input 
+                    type="number" 
+                    value={proposalForm.amount}
+                    onChange={(e) => setProposalForm({...proposalForm, amount: e.target.value})}
+                    className="w-full bg-zinc-900 border border-gray-800 rounded-xl px-3 py-2 focus:outline-none focus:border-[#007AFF] text-white font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] text-gray-500 uppercase font-mono block">Recipient Address:</label>
+                  <input 
+                    type="text" 
+                    value={proposalForm.recipient}
+                    placeholder="0x..."
+                    onChange={(e) => setProposalForm({...proposalForm, recipient: e.target.value})}
+                    className="w-full bg-zinc-900 border border-gray-800 rounded-xl px-3 py-2 focus:outline-none focus:border-[#007AFF] text-white font-mono"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Right Panel: Workspace Tabs & Details Panel (col-span-8) */}
-          <div className="lg:col-span-8 space-y-4">
             
-            {/* Consolidated Workspace Tab System */}
-            <div className="liquid-glass border border-white/5 bg-black/30 p-1.5 rounded-xl flex overflow-x-auto gap-1">
-              {[
-                { id: 'vault', label: 'Co-op Vault details' },
-                { id: 'disputes', label: 'Governance Disputes' },
-                { id: 'ledger', label: 'Auditable Ledger' },
-                { id: 'solidity', label: 'Solidity Contract' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setWorkspaceTab(tab.id as any)}
-                  className={`flex-1 py-2 px-3 text-[11px] sm:text-xs font-sans font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                    workspaceTab === tab.id 
-                      ? 'bg-gold-600 text-black shadow-md font-semibold' 
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className="flex space-x-3 pt-2">
+              <button 
+                onClick={() => setShowProposalModal(false)}
+                className="flex-1 py-2.5 bg-gray-800 text-xs font-semibold rounded-xl text-gray-300 border border-white/5 cursor-pointer hover:bg-gray-750"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  if (proposalForm.title && proposalForm.amount && proposalForm.recipient) {
+                    handleCreateProposal(
+                      activeGroup.id, 
+                      proposalForm.title, 
+                      proposalForm.desc, 
+                      Number(proposalForm.amount), 
+                      proposalForm.recipient
+                    );
+                    setShowProposalModal(false);
+                    triggerNotification(`Proposed payout payout of ${proposalForm.amount} ${activeGroup.symbol} created!`);
+                  } else {
+                    alert("Please fill in Title, Amount, and Recipient fields!");
+                  }
+                }}
+                className="flex-1 py-2.5 bg-[#007AFF] text-xs font-bold rounded-xl text-white shadow shadow-blue-500/20 cursor-pointer hover:bg-blue-600"
+              >
+                Submit Proposal
+              </button>
             </div>
-
-            {/* Tab Workspace content */}
-            <div className="liquid-glass rounded-2xl border border-white/5 p-1 bg-black/25">
-              {workspaceTab === 'vault' && (
-                <div className="animate-fade-in">
-                  <GroupDetails
-                    group={activeGroup}
-                    wallet={wallet}
-                    onContribute={handleContribute}
-                    onCreateProposal={handleCreateProposal}
-                    onSignProposal={handleSignProposal}
-                    onFlagProposal={handleFlagProposal}
-                    onVetoProposal={handleVetoProposal}
-                    onExecuteProposal={handleExecuteProposal}
-                    onToggleYield={handleToggleYield}
-                    currentUserAddress={currentUserAddress}
-                  />
-                </div>
-              )}
-
-              {workspaceTab === 'disputes' && (
-                <div className="animate-fade-in">
-                  <DisputeCenter
-                    groups={groups}
-                    wallet={wallet}
-                    onVoteDispute={handleVoteDispute}
-                    onResolveDispute={handleResolveDispute}
-                    currentUserAddress={currentUserAddress}
-                  />
-                </div>
-              )}
-
-              {workspaceTab === 'ledger' && (
-                <div className="animate-fade-in p-5">
-                  <TransactionHistory transactions={transactions} />
-                </div>
-              )}
-
-              {workspaceTab === 'solidity' && (
-                <div className="animate-fade-in p-5">
-                  <ContractViewer />
-                </div>
-              )}
-            </div>
-
           </div>
-
-        </section>
-
-      </main>
-
-      {/* Deep Footer */}
-      <footer className="relative z-20 border-t border-white/5 py-6 px-6 mt-12 text-center text-slate-500 font-mono text-[10px] space-y-2">
-        <p>© 2026 GlobalSave Protocol. High-Performance Parallelized Ledger Settlement on Monad Testnet.</p>
-        <div className="flex justify-center items-center gap-4 text-slate-600">
-          <span>Finality: 0.9s</span>
-          <span>•</span>
-          <span>Block Rate: 1.0s</span>
-          <span>•</span>
-          <span>Max Capacity: 10,000 TPS</span>
         </div>
-      </footer>
-
+      )}
     </div>
   );
 }
