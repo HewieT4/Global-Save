@@ -104,6 +104,7 @@ export const GLOBAL_SAVE_ABI = [
   },
   {
     "inputs": [
+      { "internalType": "uint8", "name": "_type", "type": "uint8" },
       { "internalType": "string", "name": "_title", "type": "string" },
       { "internalType": "string", "name": "_desc", "type": "string" },
       { "internalType": "uint256", "name": "_amount", "type": "uint256" },

@@ -72,6 +72,7 @@ export interface Proposal {
   vetoExpiry?: string;
   vetoers?: string[];
   vetoReason?: string;
+  propType?: number; // 0 = Payout, 1 = AddMember, 2 = RemoveMember, 3 = ToggleYield
 }
 
 export interface SavingsGroup {

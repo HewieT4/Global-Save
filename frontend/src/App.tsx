@@ -371,7 +371,7 @@ export default function App() {
   const handleCreateProposal = async (groupId: string, title: string, description: string, amount: number, recipient: string) => {
     if (isConnected && activeGroup?.contractAddress) {
       try {
-        await writeCreateProposal(title, description, String(amount), recipient);
+        await writeCreateProposal(0, title, description, String(amount), recipient);
         createOnChainTx('proposal_create', amount, activeGroup.symbol, `Proposed payout on-chain: ${title} for ${amount} ${activeGroup.symbol}`);
       } catch (err) {
         console.error("On-chain createProposal failed:", err);
@@ -394,7 +394,8 @@ export default function App() {
       requiredSignatures: group.requiredSignatures,
       currentSignatures: [currentUserAddress],
       status: 'pending_signatures',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      propType: 0 // 0 = Payout
     };
 
     setGroups(prev => prev.map(g => {

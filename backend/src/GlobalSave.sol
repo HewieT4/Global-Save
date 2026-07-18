@@ -17,6 +17,13 @@ contract GlobalSave {
         Rejected,
         VetoedPaused
     }
+
+    enum ProposalType {
+        Payout,
+        AddMember,
+        RemoveMember,
+        ToggleYield
+    }
     
     struct Member {
         address wallet;
@@ -28,6 +35,7 @@ contract GlobalSave {
     
     struct Proposal {
         uint256 id;
+        ProposalType propType;
         string title;
         string description;
         uint256 amount;
@@ -60,6 +68,7 @@ contract GlobalSave {
     
     address public constant DEFI_YIELD_VAULT = 0xaAaeE05717E10b001a1157a41C90e66ED927BC01;
     bool public yieldEnabled;
+    bool private locked;
     
     event Contributed(address indexed member, uint256 amount, uint256 totalBalance);
     event ProposalCreated(uint256 indexed proposalId, string title, uint256 amount);
@@ -76,6 +85,13 @@ contract GlobalSave {
         _;
     }
 
+    modifier nonReentrant() {
+        require(!locked, "GlobalSave: Reentrancy guard hit");
+        locked = true;
+        _;
+        locked = false;
+    }
+
     constructor(string memory _name, address[] memory _initialMembers, uint256 _reqSigs) {
         require(_initialMembers.length > 0, "GlobalSave: Need at least one member");
         require(_reqSigs > 0 && _reqSigs <= _initialMembers.length, "GlobalSave: Invalid signature threshold");
@@ -84,6 +100,8 @@ contract GlobalSave {
         
         for(uint i = 0; i < _initialMembers.length; i++) {
             address m = _initialMembers[i];
+            require(m != address(0), "GlobalSave: Invalid member address");
+            require(!members[m].exists, "GlobalSave: Duplicate member address");
             members[m] = Member(m, "", 0, 100, true);
             memberList.push(m);
         }
@@ -105,19 +123,23 @@ contract GlobalSave {
     }
 
     /**
-     * @notice Propose a shared expense payout to be voted or co-signed on
+     * @notice Propose a shared expense payout or governance action to be voted or co-signed on
      */
     function createProposal(
+        ProposalType _type,
         string memory _title, 
         string memory _desc, 
         uint256 _amount, 
         address payable _recipient
     ) external onlyMember returns (uint256) {
-        require(_amount <= totalPoolBalance, "GlobalSave: Insufficient pooled funds");
+        if (_type == ProposalType.Payout) {
+            require(_amount <= totalPoolBalance, "GlobalSave: Insufficient pooled funds");
+        }
         
         proposalCount++;
         proposals[proposalCount] = Proposal({
             id: proposalCount,
+            propType: _type,
             title: _title,
             description: _desc,
             amount: _amount,
@@ -251,29 +273,60 @@ contract GlobalSave {
     }
 
     /**
-     * @notice Execute an approved expense payout (transfers funds to recipient)
+     * @notice Execute an approved expense payout or governance action (requires multi-sig threshold + lock window cleared)
      */
-    function executeProposal(uint256 _proposalId) external onlyMember {
+    function executeProposal(uint256 _proposalId) external onlyMember nonReentrant {
         Proposal storage prop = proposals[_proposalId];
         require(prop.status == ProposalStatus.Approved, "GlobalSave: Proposal not approved");
         require(block.timestamp > prop.disputeDeadline, "GlobalSave: 24h safety/veto window is still active");
         require(!prop.isVetoed || block.timestamp > prop.vetoExpiry, "GlobalSave: Transaction is frozen by a 24h Veto");
-        require(prop.amount <= totalPoolBalance, "GlobalSave: Insufficient pooled funds");
         
-        if (yieldEnabled) {
-            _withdrawFromYieldVault(prop.amount);
+        prop.status = ProposalStatus.Executed;
+        
+        if (prop.propType == ProposalType.Payout) {
+            require(prop.amount <= totalPoolBalance, "GlobalSave: Insufficient pooled funds");
+            if (yieldEnabled) {
+                _withdrawFromYieldVault(prop.amount);
+            }
+            totalPoolBalance -= prop.amount;
+            
+            // Secure native transfer replacing vulnerable .transfer() stipend limits
+            (bool success, ) = prop.recipient.call{value: prop.amount}("");
+            require(success, "GlobalSave: Payout native transfer failed");
+            
+        } else if (prop.propType == ProposalType.AddMember) {
+            require(prop.recipient != address(0), "GlobalSave: Invalid target address");
+            require(!members[prop.recipient].exists, "GlobalSave: Address is already a member");
+            members[prop.recipient] = Member(prop.recipient, "", 0, 100, true);
+            memberList.push(prop.recipient);
+            
+        } else if (prop.propType == ProposalType.RemoveMember) {
+            require(members[prop.recipient].exists, "GlobalSave: Target is not a member");
+            require(memberList.length > 1, "GlobalSave: Cannot remove the last member");
+            
+            members[prop.recipient].exists = false;
+            
+            // Remove target member from active member list array
+            for (uint i = 0; i < memberList.length; i++) {
+                if (memberList[i] == prop.recipient) {
+                    memberList[i] = memberList[memberList.length - 1];
+                    memberList.pop();
+                    break;
+                }
+            }
+            
+            // Auto-adjust consensus signatures threshold if it exceeds new pool size
+            if (requiredSignaturesCount > memberList.length) {
+                requiredSignaturesCount = memberList.length;
+            }
+            
+        } else if (prop.propType == ProposalType.ToggleYield) {
+            bool enableYield = prop.amount > 0;
+            yieldEnabled = enableYield;
+            emit YieldToggled(enableYield);
         }
         
-        totalPoolBalance -= prop.amount;
-        prop.status = ProposalStatus.Executed;
-        prop.recipient.transfer(prop.amount);
-        
         emit ProposalExecuted(_proposalId, prop.recipient, prop.amount);
-    }
-    
-    function toggleYield(bool _enabled) external onlyMember {
-        yieldEnabled = _enabled;
-        emit YieldToggled(_enabled);
     }
     
     function _depositToYieldVault(uint256 _amount) internal {

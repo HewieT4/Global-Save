@@ -56,13 +56,13 @@ export function useGlobalSave(vaultAddress?: `0x${string}`) {
     } as any);
   };
 
-  const createProposal = async (title: string, description: string, amount: string, recipient: string) => {
+  const createProposal = async (type: number, title: string, description: string, amount: string, recipient: string) => {
     if (!vaultAddress) return;
     writeContract({
       address: vaultAddress,
       abi: GLOBAL_SAVE_ABI,
       functionName: 'createProposal',
-      args: [title, description, parseEther(amount), recipient as `0x${string}`]
+      args: [type, title, description, parseEther(amount), recipient as `0x${string}`]
     } as any);
   };
 
