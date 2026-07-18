@@ -192,7 +192,7 @@ export default function App() {
 
   const totalYieldCompounded = groups.reduce((acc, g) => acc + g.yieldAccrued, 0);
 
-  const activeGroup = groups.find(g => g.id === selectedGroupId) || groups[0];
+  const activeGroupRaw = groups.find(g => g.id === selectedGroupId) || groups[0];
 
   const { isConnected, address: connectedAddress } = useAccount();
 
@@ -209,7 +209,15 @@ export default function App() {
     resolveDispute: writeResolveDispute,
     executeProposal: writeExecuteProposal,
     toggleYield: writeToggleYield
-  } = useGlobalSave(activeGroup?.contractAddress as `0x${string}`);
+  } = useGlobalSave(activeGroupRaw?.contractAddress as `0x${string}`);
+
+  // Override activeGroup stats dynamically with real-time on-chain data if connected to Web3
+  const activeGroup = {
+    ...activeGroupRaw,
+    totalSaved: (isConnected && totalPoolBalance !== undefined) ? Number(totalPoolBalance) : activeGroupRaw.totalSaved,
+    requiredSignatures: (isConnected && requiredSignaturesCount !== undefined) ? Number(requiredSignaturesCount) : activeGroupRaw.requiredSignatures,
+    yieldEnabled: (isConnected && isYieldEnabledOnChain !== undefined) ? isYieldEnabledOnChain : activeGroupRaw.yieldEnabled,
+  };
 
   // Sync connected wallet address to local user identity
   useEffect(() => {
@@ -852,10 +860,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* Custom Private Key Input */}
+            {/* Custom EVM Address Input */}
             <div className="pt-4 border-t border-white/5 space-y-2">
               <span className="text-[9px] text-slate-500 font-mono font-semibold block uppercase tracking-wider">
-                Or Connect Custom Virtual EVM Key
+                Or Connect Custom Virtual EVM Address
               </span>
               <form 
                 onSubmit={(e) => {
