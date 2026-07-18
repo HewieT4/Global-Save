@@ -412,7 +412,7 @@ export default function GroupDetails({
   return (
     <div className="space-y-6">
       {/* Group Detail Card */}
-      <div id={`group-${group.id}`} className="bg-dark-800 border border-white/5 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+      <div id={`group-${group.id}`} className="glass-card rounded-2xl p-6 shadow-2xl relative overflow-hidden">
         {/* Glow Effects */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-gold-600/5 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -441,7 +441,7 @@ export default function GroupDetails({
           </div>
 
           {/* Quick Stats Panel */}
-          <div className="bg-dark-900/60 p-4 rounded-xl border border-white/5 min-w-[200px] flex flex-col justify-between">
+          <div className="glass-card p-4 rounded-xl min-w-[200px] flex flex-col justify-between">
             <span className="text-[10px] font-mono text-slate-400 font-semibold tracking-wider block">POOL TOTAL SAVED</span>
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-2xl font-mono font-bold text-white">
@@ -468,7 +468,7 @@ export default function GroupDetails({
           <div className="lg:col-span-4 space-y-6">
             
             {/* Yield Hub */}
-            <div id="yield-card" className="bg-dark-900/40 border border-white/5 rounded-xl p-4 flex flex-col justify-between">
+            <div id="yield-card" className="glass-card rounded-xl p-4 flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <BadgePercent className="h-4.5 w-4.5 text-emerald-400 animate-pulse" />
@@ -526,7 +526,7 @@ export default function GroupDetails({
             </div>
 
             {/* Deposit / Contribution Panel */}
-            <div id="deposit-card" className="bg-dark-900/40 border border-white/5 rounded-xl p-4">
+            <div id="deposit-card" className="glass-card rounded-xl p-4">
               <h3 className="text-xs font-sans font-semibold text-slate-200 mb-3 flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-gold-500" />
                 Make Contribution
@@ -585,7 +585,7 @@ export default function GroupDetails({
           <div className="lg:col-span-8 space-y-6">
             
             {/* Member Reputation & Contribution Leaderboard */}
-            <div id="member-reputation-card" className="bg-dark-900/40 border border-white/5 rounded-xl p-5 space-y-4">
+            <div id="member-reputation-card" className="glass-card rounded-xl p-5 space-y-4">
               
               {/* Leaderboard Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -796,7 +796,7 @@ export default function GroupDetails({
             </div>
 
             {/* Cooperative Contribution Trends Chart */}
-            <div id="contribution-chart-card" className="bg-dark-900/40 border border-white/5 rounded-xl p-5 space-y-4">
+            <div id="contribution-chart-card" className="glass-card rounded-xl p-5 space-y-4">
               <div>
                 <h3 className="text-xs font-display font-semibold text-white tracking-tight flex items-center gap-2 uppercase tracking-widest">
                   <TrendingUp className="h-4.5 w-4.5 text-gold-500" />
@@ -805,7 +805,7 @@ export default function GroupDetails({
                 <p className="text-[10px] text-slate-400 font-mono">Individual Cumulative Savings over Time</p>
               </div>
 
-              <div className="h-[240px] w-full bg-dark-950/40 p-4 rounded-xl border border-white/5 font-mono text-[9px]">
+              <div className="h-[240px] w-full glass-card p-4 rounded-xl font-mono text-[9px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
                     data={chartData}
@@ -872,7 +872,7 @@ export default function GroupDetails({
             </div>
 
             {/* Shared Expense Proposals */}
-            <div id="proposals-card" className="bg-dark-900/40 border border-white/5 rounded-xl p-4">
+            <div id="proposals-card" className="glass-card rounded-xl p-4">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Landmark className="h-4.5 w-4.5 text-slate-300" />
@@ -891,7 +891,7 @@ export default function GroupDetails({
 
               {/* Proposal Form */}
               {showNewPropForm && (
-                <div className="bg-dark-800/80 border border-white/5 p-4 rounded-xl mb-4">
+                <div className="glass-card p-4 rounded-xl mb-4">
                   <h4 className="text-xs font-sans font-semibold text-white mb-3">Request Shared Expense Payout</h4>
                   <form onSubmit={handleCreateProposalSubmit} className="space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -993,7 +993,7 @@ export default function GroupDetails({
                     const hasSigned = prop.currentSignatures.includes(currentUserAddress);
                     
                     return (
-                      <div key={prop.id} className="bg-dark-800 border border-white/5 rounded-xl p-4 space-y-3 transition-all duration-300 hover:border-white/10">
+                      <div key={prop.id} className="glass-card rounded-xl p-4 space-y-3 transition-all duration-300 hover:border-white/10">
                         <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
                           <div className="space-y-1">
                             <h5 className="text-xs font-sans font-semibold text-white">{prop.title}</h5>

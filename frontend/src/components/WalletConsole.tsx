@@ -105,7 +105,7 @@ export default function WalletConsole({ wallet, onFaucetClaim, transactions }: W
   };
 
   return (
-    <div id="wallet-console-card" className="bg-dark-800 border border-white/5 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300">
+    <div id="wallet-console-card" className="glass-card rounded-2xl overflow-hidden shadow-2xl transition-all duration-300">
       {/* Header */}
       <div className="p-5 border-b border-white/5 flex items-center justify-between bg-dark-900">
         <div className="flex items-center gap-3">

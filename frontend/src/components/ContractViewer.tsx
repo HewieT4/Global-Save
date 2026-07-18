@@ -48,7 +48,7 @@ export default function ContractViewer() {
   const explanation = getExplanation();
 
   return (
-    <div id="contract-viewer-card" className="bg-dark-800 border border-white/5 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12">
+    <div id="contract-viewer-card" className="glass-card rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 grid grid-cols-1 lg:grid-cols-12">
       
       {/* Code Viewer Panel (7 cols) */}
       <div className="lg:col-span-7 flex flex-col border-b lg:border-b-0 lg:border-r border-white/5">

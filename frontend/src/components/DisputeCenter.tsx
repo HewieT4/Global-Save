@@ -38,7 +38,7 @@ export default function DisputeCenter({
   };
 
   return (
-    <div id="dispute-center-card" className="bg-dark-800 border border-white/5 rounded-2xl p-6 shadow-2xl relative overflow-hidden">
+    <div id="dispute-center-card" className="glass-card rounded-2xl p-6 shadow-2xl relative overflow-hidden">
       {/* Decorative Warning Background */}
       <div className="absolute top-0 left-0 w-24 h-24 bg-rose-500/5 rounded-full blur-2xl pointer-events-none"></div>
 
@@ -85,8 +85,8 @@ export default function DisputeCenter({
               const isActive = proposal.status === 'flagged_locked';
 
               return (
-                <div key={proposal.id} id={`dispute-${proposal.id}`} className={`border rounded-xl p-5 transition-all duration-300 ${
-                  isActive ? 'border-rose-500/30 bg-dark-950/30' : 'border-white/5 bg-dark-950/10 opacity-75'
+                <div key={proposal.id} id={`dispute-${proposal.id}`} className={`glass-card rounded-xl p-5 transition-all duration-300 ${
+                  isActive ? 'border-rose-500/30 bg-dark-950/30' : 'opacity-75'
                 }`}>
                   
                   {/* Row 1: Badges */}

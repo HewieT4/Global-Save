@@ -5,7 +5,7 @@ import {
   Terminal, ShieldCheck, Activity, Users, ArrowUpRight
 } from 'lucide-react';
 import { WalletState, SavingsGroup, Transaction, Proposal, GroupMember } from './types';
-import { INITIAL_GROUPS, INITIAL_TRANSACTIONS } from './data/mockData';
+import { INITIAL_GROUPS, INITIAL_TRANSACTIONS, SIMULATED_MEMBERS } from './data/mockData';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
 import { useGlobalSave } from './hooks/useGlobalSave';
@@ -912,6 +912,15 @@ export default function App() {
 
 
 
+  // Resolve connected user details from group list or simulated signatories
+  const currentMember = activeGroup.members.find(m => m.address === currentUserAddress) 
+    || SIMULATED_MEMBERS.find(m => m.address === currentUserAddress) 
+    || {
+      name: 'Sophia Chen',
+      avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+      reputationScore: 100
+    };
+
   // Filtered proposals based on search
   const activeProposals = activeGroup.proposals.filter(p => 
     p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -1107,21 +1116,29 @@ export default function App() {
               </svg>
             </button>
 
+            {/* Mobile Header Logo when sidebar is hidden */}
+            <div className="flex items-center space-x-2 md:hidden">
+              <div className="w-6 h-6 bg-white rounded flex items-center justify-center shadow-lg shadow-white/5">
+                <span className="text-black text-[11px] font-extrabold font-display">G</span>
+              </div>
+              <span className="font-bold text-xs tracking-tight text-white font-sans">GlobalSave®</span>
+            </div>
+
             {/* Profile Info */}
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 rounded-full bg-gray-700 overflow-hidden border border-white/10 shadow-md">
                 <img 
-                  alt="Sophia Chen" 
+                  alt={currentMember.name} 
                   className="w-full h-full object-cover" 
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCb8CDju082NzkH2KdHfBJTcfryDCCnNPPtXXHyl4K04HCXZpKpVO9WivsIxP7ogaBF5twcgGBM6zcxlcKKx4YLNLScL4FY2o5y4tMlu8cAg8GYod6ZP-RcBDOu1KG_wKWS1wXa1gPhKmqPHTc-o6_DMD08PF5TtzVODMZgQPIB79pSTbENNAFx-9rLlz3XqKUm59GmmYpcsjxpxryfAsjtC3fS4AHq1hQU6Vb3kMWGcMYtz8nh5ihJiiMaLWAJ1wU4TWw23blqxTF5"
+                  src={currentMember.avatarUrl}
                 />
               </div>
               <div className="flex flex-col">
-                <span className="text-[10px] text-gray-500 font-mono">
-                  {currentUserAddress === '0xUSER_VIRTUAL_WALLET' ? '@sophia997' : `@${currentUserAddress.slice(0,6)}`}
-                  <span className="bg-zinc-800 text-[#007AFF] text-[9px] px-1 rounded ml-1.5 font-bold">100 REP</span>
+                <span className="text-[10px] text-gray-500 font-mono flex items-center">
+                  {currentUserAddress === '0xUSER_VIRTUAL_WALLET' ? '@virtual' : `@${currentUserAddress.slice(0,6)}...${currentUserAddress.slice(-4)}`}
+                  <span className="bg-zinc-800 text-[#3D81E3] text-[8px] px-1 rounded ml-1.5 font-bold uppercase">{currentMember.reputationScore} REP</span>
                 </span>
-                <span className="text-xs font-bold text-white">Sophia Chen</span>
+                <span className="text-xs font-bold text-white leading-none mt-0.5">{currentMember.name}</span>
               </div>
             </div>
 

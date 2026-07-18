@@ -85,7 +85,7 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
   };
 
   return (
-    <div id="transaction-history-card" className="bg-dark-800 border border-white/5 rounded-2xl overflow-hidden shadow-2xl transition-all duration-300">
+    <div id="transaction-history-card" className="glass-card rounded-2xl overflow-hidden shadow-2xl transition-all duration-300">
       
       {/* Header */}
       <div className="p-5 border-b border-white/5 bg-dark-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4">

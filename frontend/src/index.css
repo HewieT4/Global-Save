@@ -334,19 +334,64 @@ html,body {
   }
 }
 
-/* Stakent Dashboard Specific Styles */
+/* Stakent Dashboard Specific Styles Refined */
 .glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.015);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 
+              0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
 }
+
+.glass-card::before {
+  content: ''; 
+  position: absolute; 
+  inset: 0; 
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(255, 255, 255, 0.15) 0%, 
+    rgba(255, 255, 255, 0.04) 40%, 
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.08) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; 
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 .sidebar-active {
-  background: rgba(0, 122, 255, 0.2);
-  border-left: 2px solid #007AFF;
+  background: rgba(61, 129, 227, 0.15); /* Brand color */
+  border-left: 2px solid #3D81E3;
   border-radius: 0 8px 8px 0;
 }
+
 .gradient-blue {
-  background: linear-gradient(135deg, #007AFF 0%, rgba(255, 255, 255, 0.1) 100%);
+  background: linear-gradient(135deg, #3D81E3 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+/* Custom scrollbar matching dark cinematic brand theme */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(12, 12, 18, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(61, 129, 227, 0.25); /* Brand color transparent */
+  border-radius: 99px;
+  border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(61, 129, 227, 0.45);
 }
 
 
