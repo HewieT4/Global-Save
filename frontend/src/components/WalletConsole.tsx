@@ -14,6 +14,16 @@ export default function WalletConsole({ wallet, onFaucetClaim, transactions }: W
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [copiedKey, setCopiedKey] = useState(false);
   const [showQrCode, setShowQrCode] = useState(false);
+
+  // Auto-hide secrets after 30 seconds for security
+  useEffect(() => {
+    if (showSecrets) {
+      const timer = setTimeout(() => {
+        setShowSecrets(false);
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [showSecrets]);
   
   // Faucet state
   const [faucetToken, setFaucetToken] = useState<'MONAD' | 'USDC' | 'USDT'>('MONAD');
@@ -209,12 +219,17 @@ export default function WalletConsole({ wallet, onFaucetClaim, transactions }: W
 
             {/* Keys */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider">Private Credentials</label>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <label className="text-[10px] font-mono font-semibold text-slate-400 uppercase tracking-wider shrink-0">Private Credentials</label>
+                  <span className="px-1.5 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-[8px] font-mono rounded font-semibold uppercase tracking-wider truncate">
+                    Demo Sandbox
+                  </span>
+                </div>
                 <button
                   id="btn-toggle-secrets"
                   onClick={() => setShowSecrets(!showSecrets)}
-                  className="flex items-center gap-1 text-[10px] font-sans font-medium text-gold-500 hover:text-gold-400"
+                  className="flex items-center gap-1 text-[10px] font-sans font-medium text-gold-500 hover:text-gold-400 shrink-0"
                 >
                   {showSecrets ? (
                     <>

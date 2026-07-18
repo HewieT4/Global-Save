@@ -20,6 +20,7 @@ import LandingPage from './components/LandingPage';
 
 const DEFAULT_USER_ADDRESS = '0xUSER_VIRTUAL_WALLET';
 
+// NOTE: These keys are for simulation and local sandbox UI demo purposes only. No real assets are at risk.
 const DEFAULT_WALLET: WalletState = {
   address: '0xUSER_VIRTUAL_WALLET',
   privateKey: '0x9ae7f3c1d9405c10faee58de5c01bcde8b329432f7c00e12f0a129ef9fa23e42',
@@ -32,38 +33,63 @@ const DEFAULT_WALLET: WalletState = {
 };
 
 export default function App() {
-  const [showDashboard, setShowDashboard] = useState<boolean>(() => {
-    const saved = localStorage.getItem('glob_save_show_dashboard');
-    return saved === 'true';
-  });
+  const [showDashboard, setShowDashboard] = useState<boolean>(false);
 
   const [currentUserAddress, setCurrentUserAddress] = useState<string>(() => {
-    const saved = localStorage.getItem('glob_save_current_user_address');
-    return saved || DEFAULT_USER_ADDRESS;
+    try {
+      const saved = localStorage.getItem('glob_save_current_user_address');
+      return saved || DEFAULT_USER_ADDRESS;
+    } catch (e) {
+      console.error("Failed to read glob_save_current_user_address:", e);
+      return DEFAULT_USER_ADDRESS;
+    }
   });
-
-  useEffect(() => {
-    localStorage.setItem('glob_save_show_dashboard', String(showDashboard));
-  }, [showDashboard]);
 
   // State variables with localStorage persistence
   const [wallet, setWallet] = useState<WalletState>(() => {
-    const saved = localStorage.getItem('glob_save_wallet');
-    return saved ? JSON.parse(saved) : DEFAULT_WALLET;
+    try {
+      const saved = localStorage.getItem('glob_save_wallet');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...DEFAULT_WALLET,
+          ...parsed,
+          privateKey: DEFAULT_WALLET.privateKey,
+          seedPhrase: DEFAULT_WALLET.seedPhrase
+        };
+      }
+    } catch (e) {
+      console.error("Failed to parse glob_save_wallet:", e);
+    }
+    return DEFAULT_WALLET;
   });
 
   useEffect(() => {
-    localStorage.setItem('glob_save_current_user_address', currentUserAddress);
+    try {
+      localStorage.setItem('glob_save_current_user_address', currentUserAddress);
+    } catch (e) {
+      console.error("Failed to save glob_save_current_user_address:", e);
+    }
   }, [currentUserAddress]);
 
   const [groups, setGroups] = useState<SavingsGroup[]>(() => {
-    const saved = localStorage.getItem('glob_save_groups');
-    return saved ? JSON.parse(saved) : INITIAL_GROUPS;
+    try {
+      const saved = localStorage.getItem('glob_save_groups');
+      return saved ? JSON.parse(saved) : INITIAL_GROUPS;
+    } catch (e) {
+      console.error("Failed to parse glob_save_groups:", e);
+      return INITIAL_GROUPS;
+    }
   });
 
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
-    const saved = localStorage.getItem('glob_save_transactions');
-    return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+    try {
+      const saved = localStorage.getItem('glob_save_transactions');
+      return saved ? JSON.parse(saved) : INITIAL_TRANSACTIONS;
+    } catch (e) {
+      console.error("Failed to parse glob_save_transactions:", e);
+      return INITIAL_TRANSACTIONS;
+    }
   });
 
   const [selectedGroupId, setSelectedGroupId] = useState<string>(groups[0]?.id || 'group-nomadnest');
@@ -121,17 +147,34 @@ export default function App() {
     });
   };
 
-  // Sync state to local storage
+  // Sync state to local storage with privacy protection
   useEffect(() => {
-    localStorage.setItem('glob_save_wallet', JSON.stringify(wallet));
+    try {
+      const safeWallet = {
+        ...wallet,
+        privateKey: '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••',
+        seedPhrase: '•••• •••• •••• •••• •••• •••• •••• •••• •••• •••• •••• ••••'
+      };
+      localStorage.setItem('glob_save_wallet', JSON.stringify(safeWallet));
+    } catch (e) {
+      console.error("Failed to save glob_save_wallet:", e);
+    }
   }, [wallet]);
 
   useEffect(() => {
-    localStorage.setItem('glob_save_groups', JSON.stringify(groups));
+    try {
+      localStorage.setItem('glob_save_groups', JSON.stringify(groups));
+    } catch (e) {
+      console.error("Failed to save glob_save_groups:", e);
+    }
   }, [groups]);
 
   useEffect(() => {
-    localStorage.setItem('glob_save_transactions', JSON.stringify(transactions));
+    try {
+      localStorage.setItem('glob_save_transactions', JSON.stringify(transactions));
+    } catch (e) {
+      console.error("Failed to save glob_save_transactions:", e);
+    }
   }, [transactions]);
 
   // Compute stats
@@ -643,7 +686,16 @@ export default function App() {
   };
 
   if (!showDashboard) {
-    return <LandingPage onLaunchApp={() => setShowDashboard(true)} />;
+    return (
+      <LandingPage
+        onLaunchApp={() => {
+          setShowDashboard(true);
+          if (!currentUserAddress) {
+            handleSignIn('0xUSER_VIRTUAL_WALLET');
+          }
+        }}
+      />
+    );
   }
 
   if (!currentUserAddress) {
@@ -666,6 +718,13 @@ export default function App() {
                 <p className="text-[11px] text-slate-400 font-sans">Decentralized Micro-Savings & Shared Expense Pools</p>
               </div>
             </div>
+            
+            <button 
+              onClick={() => setShowDashboard(false)}
+              className="px-3.5 py-1.5 bg-zinc-800 hover:bg-zinc-750 border border-white/10 rounded-xl text-xs font-semibold text-white transition active:scale-95 cursor-pointer"
+            >
+              Back to Home
+            </button>
           </div>
         </header>
 
@@ -779,7 +838,14 @@ export default function App() {
                   const form = e.currentTarget;
                   const input = form.elements.namedItem('customAddress') as HTMLInputElement;
                   if (input && input.value.trim()) {
-                    handleSignIn(input.value.trim());
+                    const addressVal = input.value.trim();
+                    // EVM addresses are 42 characters starting with 0x followed by 40 hex chars
+                    const evmAddrRegex = /^0x[a-fA-F0-9]{40}$/;
+                    if (!evmAddrRegex.test(addressVal)) {
+                      alert("Invalid EVM Address! Must start with '0x' followed by exactly 40 hex characters.");
+                      return;
+                    }
+                    handleSignIn(addressVal);
                   }
                 }}
                 className="flex gap-2"
@@ -811,18 +877,7 @@ export default function App() {
 
 
 
-  if (!showDashboard) {
-    return (
-      <LandingPage
-        onLaunchApp={() => {
-          setShowDashboard(true);
-          if (!currentUserAddress) {
-            handleSignIn('0xUSER_VIRTUAL_WALLET');
-          }
-        }}
-      />
-    );
-  }
+
 
   // Filtered proposals based on search
   const activeProposals = activeGroup.proposals.filter(p => 
