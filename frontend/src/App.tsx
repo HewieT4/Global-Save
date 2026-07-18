@@ -74,6 +74,7 @@ export default function App() {
   const [proposalForm, setProposalForm] = useState({ title: '', desc: '', amount: '250', recipient: '0x3ea7...8b1e' });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showPrivateKey, setShowPrivateKey] = useState<boolean>(false);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   const handleSignOut = () => {
     setCurrentUserAddress("");
@@ -139,6 +140,59 @@ export default function App() {
 
   // Active selected group
   const activeGroup = groups.find(g => g.id === selectedGroupId) || groups[0];
+
+  // Draw canvas charts on dashboard load or group selection
+  useEffect(() => {
+    if (workspaceTab === 'vault' && showDashboard) {
+      const timer = setTimeout(() => {
+        // Draw sparklines
+        drawMockChart('nomadnest-chart', '#007AFF', [0.8, 0.4, 0.7, 0.3, 0.6, 0.2]);
+        drawMockChart('communi-chart', '#ffffff', [0.7, 0.6, 0.8, 0.5, 0.4, 0.1]);
+        drawMockChart('travel-chart', '#60a5fa', [0.2, 0.5, 0.3, 0.6, 0.4, 0.8]);
+        
+        drawMockChart('trend-chart', '#007AFF', [0.4, 0.5, 0.3, 0.6, 0.4, 0.5]);
+        drawMockChart('price-chart', '#60a5fa', [0.2, 0.4, 0.3, 0.6, 0.5, 0.8]);
+        drawMockChart('ratio-chart', '#007AFF', [0.8, 0.7, 0.75, 0.7, 0.8, 0.78]);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [workspaceTab, selectedGroupId, showDashboard, groups]);
+
+  const drawMockChart = (canvasId: string, color: string, points: number[]) => {
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    
+    const w = rect.width;
+    const h = rect.height;
+    
+    ctx.clearRect(0, 0, w, h);
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.moveTo(0, h * points[0]);
+    
+    points.forEach((p, i) => {
+      const x = (i / (points.length - 1)) * w;
+      const y = h * p;
+      ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, color + '22');
+    grad.addColorStop(1, color + '00');
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  };
 
   // Helper to add dynamic logs/transactions
   const createOnChainTx = (type: any, amount: number, symbol: any, description: string) => {
@@ -641,60 +695,7 @@ export default function App() {
     );
   }
 
-  // Draw canvas charts on dashboard load or group selection
-  useEffect(() => {
-    if (workspaceTab === 'vault' && showDashboard) {
-      const timer = setTimeout(() => {
-        // Draw sparklines
-        drawMockChart('eth-chart', '#007AFF', [0.8, 0.4, 0.7, 0.3, 0.6, 0.2]);
-        drawMockChart('bnb-chart', '#ffffff', [0.7, 0.6, 0.8, 0.5, 0.4, 0.1]);
-        drawMockChart('poly-chart', '#60a5fa', [0.2, 0.5, 0.3, 0.6, 0.4, 0.8]);
-        
-        drawMockChart('trend-chart', '#007AFF', [0.4, 0.5, 0.3, 0.6, 0.4, 0.5]);
-        drawMockChart('price-chart', '#60a5fa', [0.2, 0.4, 0.3, 0.6, 0.5, 0.8]);
-        drawMockChart('ratio-chart', '#007AFF', [0.8, 0.7, 0.75, 0.7, 0.8, 0.78]);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [workspaceTab, selectedGroupId, showDashboard, groups]);
 
-  const drawMockChart = (canvasId: string, color: string, points: number[]) => {
-    const canvas = document.getElementById(canvasId) as HTMLCanvasElement;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * window.devicePixelRatio;
-    canvas.height = rect.height * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-    
-    const w = rect.width;
-    const h = rect.height;
-    
-    ctx.clearRect(0, 0, w, h);
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.moveTo(0, h * points[0]);
-    
-    points.forEach((p, i) => {
-      const x = (i / (points.length - 1)) * w;
-      const y = h * p;
-      ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, color + '22');
-    grad.addColorStop(1, color + '00');
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
-    ctx.fillStyle = grad;
-    ctx.fill();
-  };
-
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   if (!showDashboard) {
     return (
