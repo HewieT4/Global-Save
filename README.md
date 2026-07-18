@@ -1,3 +1,18 @@
+# Hackathon Submission Details
+
+*   **Name**: GlobalSave
+*   **Description**: A decentralized micro-savings and cooperative shared governance platform on Monad featuring multi-sig vaults, 24h vetos, and dispute governance.
+*   **Problem**: Traditional savings groups (RoSCAs/co-ops) suffer from high trust overhead, manual reconciliation, and zero yield integration.
+*   **Solution**: GlobalSave pools capital, automates DeFi yield, and protects funds using a multi-signature consensus threshold reinforced by individual veto rights and community-wide dispute governance voting—taking advantage of Monad's 1-second block times and sub-penny gas fees.
+*   **Github Repo**: [GlobalSave Repository](https://github.com/HewieT4/Global-Save.git)
+*   **Category**: Monad Testnet / Devnet
+*   **Contract Address**: `0x2915A9C0c5e796e6D1b8cC28Bb4F3b7F5cf5E796` (NomadNest Lisbon Co-Living Vault)
+*   **Project URL**: [GlobalSave Live Portal](https://github.com/HewieT4/Global-Save)
+*   **Demo Video**: [GlobalSave Walkthrough](https://youtube.com/)
+*   **Post URL**: [GlobalSave on Twitter/X](https://x.com/)
+
+---
+
 # GlobalSave 🪙
 
 **GlobalSave** is a decentralized micro-savings and cooperative shared governance platform engineered for high-performance networks like **Monad**. It enables friends, digital nomads, and co-ops to pool capital, automate yield generation, and spend funds transparently via secure multi-signature approvals, reinforced by decentralized veto and dispute protection layers.
