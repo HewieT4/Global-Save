@@ -55,6 +55,15 @@ All styling properties must use custom CSS custom property tokens for complete t
 
 ---
 
+## Detailed Sub-Pages Layout (Solutions, Blog, Documentation, Careers)
+
+To maintain cohesive branding and visual depth across all pages:
+- **Transition Animation:** All page switching triggers a smooth fade-and-slide motion via Framer Motion (`initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}`).
+- **Cinematic Overlays:** Sub-pages are rendered as full-screen overlays with absolute positions inside the root container, retaining the global background video and guidelines for visual continuity.
+- **Glass Panel Sheets:** Inner content borders must utilize the `.liquid-glass` class with raw bronze borders (`border border-white/5 bg-[#0e1014]/90 backdrop-blur-2xl`).
+
+---
+
 ## Icons (Lucide React)
 
 Use the following stroke-based icons:
