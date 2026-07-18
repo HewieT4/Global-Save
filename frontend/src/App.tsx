@@ -65,6 +65,7 @@ export default function App() {
 
   const [selectedGroupId, setSelectedGroupId] = useState<string>(groups[0]?.id || 'group-nomadnest');
   const [activeTab, setActiveTab] = useState<'pools' | 'contract' | 'history'>('pools');
+  const [workspaceTab, setWorkspaceTab] = useState<'vault' | 'disputes' | 'ledger' | 'solidity'>('vault');
 
   const handleSignOut = () => {
     setCurrentUserAddress("");
@@ -633,10 +634,25 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 text-slate-300 flex flex-col font-sans select-none antialiased selection:bg-gold-600 selection:text-black">
-      
+    <div className="relative min-h-screen overflow-x-hidden bg-[#0c0c0c] text-white flex flex-col font-sans selection:bg-gold-600 selection:text-black">
+      {/* Global background video (fixed, behind everything) */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          className="w-full h-full object-cover pointer-events-none opacity-20"
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_064122_c4750c0e-7476-4b44-94a2-a85a65c63bf2.mp4" 
+        />
+      </div>
+
+      {/* Global vertical guides */}
+      <div className="hidden md:block pointer-events-none fixed inset-y-0 left-1/2 -translate-x-[calc(50%+36rem)] w-px bg-white/5 z-[5]" />
+      <div className="hidden md:block pointer-events-none fixed inset-y-0 left-1/2 translate-x-[calc(-50%+36rem)] w-px bg-white/5 z-[5]" />
+
       {/* Top Header */}
-      <header className="bg-dark-900 border-b border-white/5 py-4 px-6 sticky top-0 z-30 shadow-md backdrop-blur-md">
+      <header className="relative z-30 liquid-glass border-b border-white/5 py-4 px-6 sticky top-0 shadow-md backdrop-blur-md bg-black/40">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
           <div 
@@ -648,41 +664,31 @@ export default function App() {
               <Landmark className="h-5 w-5" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-white font-display group-hover:text-gold-500 transition-colors">GlobalSave</h1>
-                <span className="px-2 py-0.5 bg-gold-600/10 border border-gold-600/20 rounded text-[9px] font-mono text-gold-500 font-medium">
-                  Monad Devnet
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 font-sans">Decentralized Micro-Savings & Shared Expense Pools</p>
+              <h1 className="text-xl font-bold tracking-tight text-white font-display group-hover:text-gold-500 transition-colors">GlobalSave</h1>
+              <span className="px-2 py-0.5 bg-gold-600/10 border border-gold-600/20 rounded text-[9px] font-mono text-gold-500 font-medium">
+                MONAD TESTNET CONSOLE
+              </span>
             </div>
           </div>
 
-          {/* Connected Wallet Account Info & Sign Out */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3 bg-dark-950/80 px-4 py-2 rounded-xl border border-white/5">
-              <div className="text-right">
-                <span className="text-[10px] text-slate-500 block font-mono">AUTHORIZED CO-OP ID</span>
-                <span className="text-xs text-white font-mono font-bold block">
-                  {currentUserAddress.slice(0, 10)}...{currentUserAddress.slice(-4)}
-                </span>
-              </div>
-              <div className="h-8 w-8 rounded-full bg-gold-600/10 border border-gold-600/20 flex items-center justify-center text-gold-500 text-xs font-mono font-bold">
+          {/* User Address Bar */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="px-3.5 py-2 bg-white/5 border border-white/10 rounded-xl flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[10px] font-mono text-slate-400 font-semibold uppercase tracking-wider">Monad Devnet</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-[10px] font-mono text-slate-300 font-bold tracking-tight select-all">
+                {currentUserAddress.slice(0, 10)}...{currentUserAddress.slice(-4)}
+              </span>
+              <div className="h-5 w-5 rounded-full bg-gold-600/10 border border-gold-600/20 flex items-center justify-center text-gold-500 text-[9px] font-mono font-bold">
                 {currentUserAddress === '0xUSER_VIRTUAL_WALLET' ? 'You' : 'CO'}
               </div>
             </div>
 
             <button
-              onClick={() => setShowDashboard(false)}
-              className="px-3.5 py-2.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-xs font-sans font-semibold transition-all shadow-md cursor-pointer active:translate-y-px"
-            >
-              Back to Website
-            </button>
-
-            <button
               id="btn-sign-out"
               onClick={handleSignOut}
-              className="px-3.5 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/30 rounded-xl text-xs font-sans font-semibold transition-all shadow-md cursor-pointer active:translate-y-px"
+              className="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/30 rounded-xl text-xs font-sans font-semibold transition-all shadow-md cursor-pointer active:translate-y-px"
             >
               Sign Out
             </button>
@@ -692,12 +698,12 @@ export default function App() {
       </header>
 
       {/* Main Content Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+      <main className="relative z-20 flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
         
         {/* Row 1: High-Level Analytics Indicators */}
         <section id="onchain-stats-dashboard" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           
-          <div className="bg-dark-800 border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden shadow-xl">
+          <div className="liquid-glass border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden bg-black/30 shadow-xl">
             <div className="space-y-1">
               <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Total Pool Savings</span>
               <div className="flex items-baseline gap-1">
@@ -710,7 +716,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-dark-800 border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden shadow-xl">
+          <div className="liquid-glass border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden bg-black/30 shadow-xl">
             <div className="space-y-1">
               <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Your Contributions</span>
               <div className="flex items-baseline gap-1">
@@ -723,7 +729,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-dark-800 border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden shadow-xl">
+          <div className="liquid-glass border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden bg-black/30 shadow-xl">
             <div className="space-y-1">
               <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">DeFi Accrued APY</span>
               <div className="flex items-baseline gap-1">
@@ -736,27 +742,27 @@ export default function App() {
             </div>
           </div>
 
-          <div className="bg-dark-800 border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden shadow-xl">
+          <div className="liquid-glass border border-white/5 p-4 rounded-2xl flex items-center justify-between relative overflow-hidden bg-black/30 shadow-xl">
             <div className="space-y-1">
-              <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Security Alerts</span>
+              <span className="text-[10px] text-slate-400 font-mono font-semibold uppercase tracking-wider block">Security Locks</span>
               <div className="flex items-baseline gap-1">
                 <span className={`text-xl font-mono font-bold ${activeDisputesCount > 0 ? 'text-rose-400 animate-pulse' : 'text-slate-400'}`}>
                   {activeDisputesCount} Active Locks
                 </span>
               </div>
             </div>
-            <div className={`p-3 rounded-xl border ${activeDisputesCount > 0 ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'bg-dark-700 text-slate-500 border-white/5'}`}>
+            <div className={`p-3 rounded-xl border ${activeDisputesCount > 0 ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' : 'liquid-glass text-slate-500 border-white/5'}`}>
               <ShieldAlert className="h-5 w-5" />
             </div>
           </div>
 
         </section>
 
-        {/* Row 3: Cooperative Workspace - Wallet + Group details */}
+        {/* Row 2: Cooperative Workspace - Wallet + Group details */}
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
-          {/* Left Panel: Wallet Console (5 cols) & Savings Pools Selection */}
-          <div className="lg:col-span-5 space-y-6">
+          {/* Left Panel: Wallet Console & Savings Pools Selection (col-span-4) */}
+          <div className="lg:col-span-4 space-y-6">
             <WalletConsole 
               wallet={wallet} 
               onFaucetClaim={handleFaucetClaim} 
@@ -764,11 +770,11 @@ export default function App() {
             />
 
             {/* Select Savings Pool card list */}
-            <div className="bg-dark-800 border border-white/5 rounded-2xl p-5 shadow-2xl space-y-4">
+            <div className="liquid-glass border border-white/5 rounded-2xl p-5 shadow-2xl space-y-4 bg-black/30">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-mono font-semibold text-slate-400 uppercase tracking-widest flex items-center gap-2 font-display">
                   <Layers className="h-4 w-4 text-gold-500" />
-                  Select Active Savings Pool
+                  Select Savings Pool
                 </h2>
                 <span className="text-[10px] font-mono text-slate-500 font-semibold">{groups.length} Pools</span>
               </div>
@@ -784,8 +790,8 @@ export default function App() {
                       onClick={() => setSelectedGroupId(g.id)}
                       className={`w-full text-left p-4 rounded-xl border cursor-pointer transition-all duration-300 relative overflow-hidden flex flex-col gap-2 ${
                         isActive 
-                          ? 'bg-dark-900 border-gold-600/60 shadow-gold-600/5 shadow-md scale-[1.01]' 
-                          : 'bg-dark-900/40 border-white/5 hover:border-white/10 hover:bg-dark-850/50'
+                          ? 'bg-black/50 border-gold-600/60 shadow-gold-600/5 shadow-md scale-[1.01]' 
+                          : 'bg-black/10 border-white/5 hover:border-white/10 hover:bg-black/30'
                       }`}
                     >
                       {/* Ambient Glow on Active Card */}
@@ -794,7 +800,7 @@ export default function App() {
                       )}
 
                       <div className="flex items-center justify-between gap-2 w-full">
-                        <span className="px-2 py-0.5 bg-dark-950 rounded-md text-[9px] font-mono font-semibold text-slate-300 border border-white/5">
+                        <span className="px-2 py-0.5 bg-black/30 rounded-md text-[9px] font-mono font-semibold text-slate-300 border border-white/5">
                           {g.category}
                         </span>
                         <span className="text-[10px] font-mono text-gold-500 font-medium">
@@ -815,7 +821,7 @@ export default function App() {
 
                       {/* Progress tracker bar */}
                       <div className="space-y-1 w-full">
-                        <div className="w-full bg-dark-950 h-1 rounded-full overflow-hidden">
+                        <div className="w-full bg-black/40 h-1 rounded-full overflow-hidden">
                           <div className="bg-gold-600 h-full rounded-full" style={{ width: `${progress}%` }} />
                         </div>
                         <div className="flex justify-between text-[8px] font-mono text-slate-500">
@@ -834,65 +840,75 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Panel: Group Ledger & Multi-Sig (7 cols) */}
-          <div className="lg:col-span-7">
-            <GroupDetails
-              group={activeGroup}
-              wallet={wallet}
-              onContribute={handleContribute}
-              onCreateProposal={handleCreateProposal}
-              onSignProposal={handleSignProposal}
-              onFlagProposal={handleFlagProposal}
-              onVetoProposal={handleVetoProposal}
-              onExecuteProposal={handleExecuteProposal}
-              onToggleYield={handleToggleYield}
-              currentUserAddress={currentUserAddress}
-            />
-          </div>
+          {/* Right Panel: Workspace Tabs & Details Panel (col-span-8) */}
+          <div className="lg:col-span-8 space-y-4">
+            
+            {/* Consolidated Workspace Tab System */}
+            <div className="liquid-glass border border-white/5 bg-black/30 p-1.5 rounded-xl flex overflow-x-auto gap-1">
+              {[
+                { id: 'vault', label: 'Co-op Vault details' },
+                { id: 'disputes', label: 'Governance Disputes' },
+                { id: 'ledger', label: 'Auditable Ledger' },
+                { id: 'solidity', label: 'Solidity Contract' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setWorkspaceTab(tab.id as any)}
+                  className={`flex-1 py-2 px-3 text-[11px] sm:text-xs font-sans font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
+                    workspaceTab === tab.id 
+                      ? 'bg-gold-600 text-black shadow-md font-semibold' 
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-        </section>
+            {/* Tab Workspace content */}
+            <div className="liquid-glass rounded-2xl border border-white/5 p-1 bg-black/25">
+              {workspaceTab === 'vault' && (
+                <div className="animate-fade-in">
+                  <GroupDetails
+                    group={activeGroup}
+                    wallet={wallet}
+                    onContribute={handleContribute}
+                    onCreateProposal={handleCreateProposal}
+                    onSignProposal={handleSignProposal}
+                    onFlagProposal={handleFlagProposal}
+                    onVetoProposal={handleVetoProposal}
+                    onExecuteProposal={handleExecuteProposal}
+                    onToggleYield={handleToggleYield}
+                    currentUserAddress={currentUserAddress}
+                  />
+                </div>
+              )}
 
-        {/* Row 4: Onchain Dispute Center (Governance) */}
-        <section id="governance-dispute-section">
-          <DisputeCenter
-            groups={groups}
-            wallet={wallet}
-            onVoteDispute={handleVoteDispute}
-            onResolveDispute={handleResolveDispute}
-            currentUserAddress={currentUserAddress}
-          />
-        </section>
+              {workspaceTab === 'disputes' && (
+                <div className="animate-fade-in">
+                  <DisputeCenter
+                    groups={groups}
+                    wallet={wallet}
+                    onVoteDispute={handleVoteDispute}
+                    onResolveDispute={handleResolveDispute}
+                    currentUserAddress={currentUserAddress}
+                  />
+                </div>
+              )}
 
-        {/* Row 5: Solidity Contract Console & Explorer Tabs */}
-        <section className="space-y-4">
-          
-          <div className="flex border-b border-white/5 bg-dark-900/40 p-1 rounded-xl max-w-sm">
-            <button
-              id="tab-contract"
-              onClick={() => setActiveTab('pools')}
-              className={`flex-1 py-1.5 text-[10px] font-sans font-semibold rounded-lg transition-all ${
-                activeTab === 'pools' ? 'bg-gold-600 text-black shadow-md' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Solidity Contract Console
-            </button>
-            <button
-              id="tab-history"
-              onClick={() => setActiveTab('history')}
-              className={`flex-1 py-1.5 text-[10px] font-sans font-semibold rounded-lg transition-all ${
-                activeTab === 'history' ? 'bg-gold-600 text-black shadow-md' : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              Auditable Ledger history
-            </button>
-          </div>
+              {workspaceTab === 'ledger' && (
+                <div className="animate-fade-in p-5">
+                  <TransactionHistory transactions={transactions} />
+                </div>
+              )}
 
-          <div>
-            {activeTab === 'pools' ? (
-              <ContractViewer />
-            ) : (
-              <TransactionHistory transactions={transactions} />
-            )}
+              {workspaceTab === 'solidity' && (
+                <div className="animate-fade-in p-5">
+                  <ContractViewer />
+                </div>
+              )}
+            </div>
+
           </div>
 
         </section>
@@ -900,7 +916,7 @@ export default function App() {
       </main>
 
       {/* Deep Footer */}
-      <footer className="bg-dark-950 border-t border-white/5 py-6 px-6 mt-12 text-center text-slate-500 font-mono text-[10px] space-y-2">
+      <footer className="relative z-20 border-t border-white/5 py-6 px-6 mt-12 text-center text-slate-500 font-mono text-[10px] space-y-2">
         <p>© 2026 GlobalSave Protocol. High-Performance Parallelized Ledger Settlement on Monad Testnet.</p>
         <div className="flex justify-center items-center gap-4 text-slate-600">
           <span>Finality: 0.9s</span>
