@@ -1,0 +1,33 @@
+# Ignore PDFs
+*.pdf
+
+# Ignore Node dependencies
+node_modules/
+frontend/node_modules/
+
+# Ignore builds
+dist/
+frontend/dist/
+out/
+backend/out/
+backend/cache/
+
+# Ignore local environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env
+frontend/.env.local
+
+# IDE and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
