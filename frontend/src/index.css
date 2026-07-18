@@ -321,3 +321,16 @@ html,body {
     padding-right:0; 
   }
 }
+
+@media (max-width: 480px) {
+  .c3-card {
+    flex: 0 0 280px !important;
+    padding: 30px 16px !important;
+    min-height: 480px !important;
+  }
+  .c3-desc {
+    margin-bottom: 20px !important;
+    min-height: auto !important;
+  }
+}
+
