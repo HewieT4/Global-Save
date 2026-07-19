@@ -8,19 +8,16 @@ import "../src/GlobalSaveFactory.sol";
 contract DeployGlobalSave is Script {
     function run() external {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address deployer = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy Factory
         GlobalSaveFactory factory = new GlobalSaveFactory();
         console.log("GlobalSaveFactory deployed at:", address(factory));
 
-        address[] memory initialMembers = new address[](3);
-        initialMembers[0] = 0x3ea789f1d9405c10faee58de5c01bcde8b328b1E;
-        initialMembers[1] = 0x9d2a45a1c1d9405c10faee58de5c01bcde8b321a3F;
-        initialMembers[2] = 0x7c4f12e1d9405c10faee58de5c01bcde8b32d892;
+        address[] memory initialMembers = new address[](1);
+        initialMembers[0] = deployer;
 
-        // Deploy vault with 2-of-3 signatures threshold
-        address vault = factory.createVault("NomadNest Lisbon Co-Living", initialMembers, 2);
+        address vault = factory.createVault("NomadNest Lisbon Co-Living", initialMembers, 1);
         console.log("First vault deployed at:", vault);
 
         vm.stopBroadcast();

@@ -66,7 +66,7 @@ contract GlobalSave {
     uint256 public proposalCount;
     uint256 public requiredSignaturesCount;
     
-    address public constant DEFI_YIELD_VAULT = 0xaAaeE05717E10b001a1157a41C90e66ED927BC01;
+    address public constant DEFI_YIELD_VAULT = address(0);
     bool public yieldEnabled;
     bool private locked;
     
@@ -138,26 +138,19 @@ contract GlobalSave {
         }
         
         proposalCount++;
-        proposals[proposalCount] = Proposal({
-            id: proposalCount,
-            propType: _type,
-            title: _title,
-            description: _desc,
-            amount: _amount,
-            recipient: _recipient,
-            creator: msg.sender,
-            requiredSignatures: uint8(requiredSignaturesCount),
-            signatureCount: 1,
-            status: ProposalStatus.PendingSignatures,
-            createdAt: block.timestamp,
-            disputeDeadline: 0,
-            votesApprove: 0,
-            votesReject: 0,
-            flagger: address(0),
-            isVetoed: false,
-            vetoExpiry: 0
-        });
-        
+        Proposal storage newProp = proposals[proposalCount];
+        newProp.id = proposalCount;
+        newProp.propType = _type;
+        newProp.title = _title;
+        newProp.description = _desc;
+        newProp.amount = _amount;
+        newProp.recipient = _recipient;
+        newProp.creator = msg.sender;
+        newProp.requiredSignatures = uint8(requiredSignaturesCount);
+        newProp.signatureCount = 1;
+        newProp.status = ProposalStatus.PendingSignatures;
+        newProp.createdAt = block.timestamp;
+
         proposalSignatures[proposalCount][msg.sender] = true;
         
         emit ProposalCreated(proposalCount, _title, _amount);
