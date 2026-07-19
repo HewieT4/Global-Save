@@ -112,6 +112,7 @@ contract GlobalSave {
      */
     function contribute(uint256 _amount) external payable onlyMember {
         require(_amount > 0, "GlobalSave: Contribution must be greater than 0");
+        require(msg.value == _amount, "GlobalSave: Sent value must match amount");
         members[msg.sender].totalContributed += _amount;
         totalPoolBalance += _amount;
         
@@ -127,7 +128,7 @@ contract GlobalSave {
      */
     function createProposal(
         ProposalType _type,
-        string memory _title, 
+        string memory _title,  
         string memory _desc, 
         uint256 _amount, 
         address payable _recipient
